@@ -1,0 +1,12 @@
+{% macro tab(href, key, label) %}
+<a href="{{ href }}" class="nav-link {% if active_tab == key %}active fw-bold{% endif %}" style="color: {% if active_tab == key %}#2f6fed{% else %}#495057{% endif %};">{{ label }}</a>
+{% endmacro %}
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id, "overview", "Tổng quan") }}</li>
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id ~ "/nvl", "nvl", "Nguyên vật liệu") }}</li>
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id ~ "/linh-kien", "linh_kien", "Linh kiện tiêu chuẩn") }}</li>
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id ~ "/gia-cong", "gia_cong", "Gia công") }}</li>
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id ~ "/spec", "spec", "Mô tả linh kiện") }}</li>
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id ~ "/io", "io", "Tính toán IO") }}</li>
+    <li class="nav-item">{{ tab("/bao-gia/" ~ quote.id ~ "/ghi-chu", "ghi_chu", "Ghi chú") }}</li>
+</ul>

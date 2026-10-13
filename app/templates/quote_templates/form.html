@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if quote %}Sửa mẫu{% else %}Tạo mẫu mới{% endif %} - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">{% if quote %}Sửa mẫu báo giá{% else %}Tạo mẫu báo giá mới{% endif %}</h1>
+
+<form method="post" action="{% if quote %}/mau-bao-gia/{{ quote.id }}/sua{% else %}/mau-bao-gia/moi{% endif %}" class="bg-white p-4 rounded shadow-sm" style="max-width: 640px;">
+    <div class="mb-3">
+        <label class="form-label">Tên mẫu *</label>
+        <input class="form-control" type="text" name="ten_template" required value="{{ quote.ten_template if quote else '' }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Khách hàng</label>
+        <input class="form-control" type="text" name="khach_hang" value="{{ (quote.khach_hang or '') if quote else '' }}">
+    </div>
+    <button class="btn btn-primary" type="submit">Lưu</button>
+    <a class="btn btn-outline-secondary" href="/mau-bao-gia">Hủy</a>
+    {% if quote %}
+    <a class="btn btn-outline-secondary" href="/bao-gia/{{ quote.id }}/linh-kien">Sửa nội dung mẫu</a>
+    {% endif %}
+</form>
+{% endblock %}

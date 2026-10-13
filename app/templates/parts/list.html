@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Linh kiện - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Linh kiện <span class="text-muted fs-6">({{ total }} kết quả)</span></h1>
+    <div class="d-flex gap-2">
+        <a href="/linh-kien/nhap-excel" class="btn btn-outline-secondary">Nhập từ Excel</a>
+        <a href="/linh-kien/nhap-dan" class="btn btn-outline-secondary">Dán trực tiếp từ Excel</a>
+        <a href="/linh-kien/nhap-ai" class="btn btn-outline-secondary">Nhập nhanh bằng AI</a>
+        <a href="/linh-kien/moi" class="btn btn-primary">+ Thêm linh kiện</a>
+    </div>
+</div>
+
+<form method="get" action="/linh-kien" id="filter-form" class="row g-2 mb-3">
+    <div class="col-sm-6 col-md-3">
+        <input class="form-control" type="text" name="ten" placeholder="Tên linh kiện" value="{{ filters.ten }}" autocomplete="off">
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <input class="form-control" type="text" name="ma" placeholder="Mã linh kiện" value="{{ filters.ma }}" autocomplete="off">
+    </div>
+    <div class="col-sm-4 col-md-2">
+        <select class="form-select" name="hang">
+            <option value="">-- Hãng --</option>
+            {% for h in hang_options %}
+            <option value="{{ h }}" {% if filters.hang == h %}selected{% endif %}>{{ h }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-sm-4 col-md-2">
+        <select class="form-select" name="loai">
+            <option value="">-- Loại --</option>
+            {% for l in loai_options %}
+            <option value="{{ l }}" {% if filters.loai == l %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-sm-4 col-md-2">
+        <select class="form-select" name="ncc">
+            <option value="">-- Nhà cung cấp --</option>
+            {% for n in ncc_options %}
+            <option value="{{ n }}" {% if filters.ncc == n %}selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <noscript><button class="btn btn-secondary" type="submit">Lọc</button></noscript>
+</form>
+
+{% if filters.ten or filters.ma or filters.hang or filters.loai or filters.ncc %}
+<div class="mb-3">
+    <a href="/linh-kien" class="btn btn-sm btn-outline-secondary">Bỏ lọc</a>
+</div>
+{% endif %}
+
+<form method="post" action="/linh-kien/xoa-nhieu" onsubmit="return confirm('Xóa hẳn các linh kiện đã chọn khỏi CSDL? Không thể hoàn tác — nếu linh kiện đang dùng trong báo giá/cụm mẫu, các dòng đó cũng sẽ bị xóa theo.');">
+    <div class="mb-2">
+        <button type="submit" id="bulk-delete-btn" class="btn btn-outline-danger btn-sm" disabled>
+            Xóa đã chọn (<span id="selected-count">0</span>)
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Tên linh kiện</th>
+                    <th>Mã linh kiện</th>
+                    <th>Hãng</th>
+                    <th>Loại</th>
+                    <th>Đơn vị</th>
+                    <th>Nhà cung cấp</th>
+                    <th>Đơn giá (VND)</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in parts %}
+                <tr id="part-row-{{ p.id }}">
+                    <td><input type="checkbox" class="row-checkbox" name="ids" value="{{ p.id }}"></td>
+                    <td><a href="/linh-kien/{{ p.id }}">{{ p.ten_linh_kien }}</a></td>
+                    <td>{{ p.ma_linh_kien or "—" }}</td>
+                    <td>{{ p.hang or "—" }}</td>
+                    <td>
+                        <select class="form-select form-select-sm" form="loai-form-{{ p.id }}" name="loai" onchange="quickEditSubmit(this)" style="min-width:110px">
+                            <option value="">-- Loại --</option>
+                            {% for l in loai_options %}
+                            <option value="{{ l }}" {% if p.loai == l %}selected{% endif %}>{{ l }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input class="form-control form-control-sm" form="donvi-form-{{ p.id }}" name="don_vi" value="{{ p.don_vi or '' }}" placeholder="—" onblur="if (this.value !== this.defaultValue) quickEditSubmit(this);" style="min-width:80px">
+                    </td>
+                    {% if p.price %}
+                    <td>{{ p.price.nha_cung_cap or "(chưa rõ NCC)" }}</td>
+                    <td>{{ "{:,.0f}".format(p.price.don_gia) }}</td>
+                    {% else %}
+                    <td class="text-muted">—</td>
+                    <td class="text-muted">—</td>
+                    {% endif %}
+                    <td><a href="/linh-kien/{{ p.id }}" class="btn btn-sm btn-outline-secondary">Chi tiết</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">Không có linh kiện phù hợp.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</form>
+
+{% for p in parts %}
+<form id="loai-form-{{ p.id }}" method="post" action="/linh-kien/{{ p.id }}/sua-loai" class="d-none"></form>
+<form id="donvi-form-{{ p.id }}" method="post" action="/linh-kien/{{ p.id }}/sua-don-vi" class="d-none"></form>
+{% endfor %}
+
+{% if total_pages > 1 %}
+<nav>
+    <ul class="pagination">
+        {% for p in range(1, total_pages + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}&ma={{ filters.ma }}&ten={{ filters.ten }}&hang={{ filters.hang }}&loai={{ filters.loai }}&ncc={{ filters.ncc }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+
+<script src="{{ static_url('js/parts.js') }}"></script>
+{% endblock %}

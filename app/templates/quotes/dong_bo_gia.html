@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Đồng bộ giá theo CSDL - {{ quote.ma_bao_gia if quote else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_subnav.html" %}
+
+<h2 class="h5 mb-1">Đồng bộ giá theo CSDL</h2>
+<p class="text-muted mb-4">
+    Danh sách các dòng linh kiện trong báo giá này đang có giá/NCC khác với giá/NCC hiện tại trong CSDL —
+    thường do linh kiện được thêm khi CSDL chưa có giá, hoặc giá CSDL đã được cập nhật sau đó. Chọn dòng muốn
+    cập nhật rồi bấm "Cập nhật giá đã chọn" — chỉ đổi giá của báo giá này, không ảnh hưởng gì tới CSDL.
+</p>
+
+{% if not lines %}
+<div class="alert alert-success">Không có dòng nào lệch giá so với CSDL — mọi giá trong báo giá này đều đã khớp CSDL.</div>
+{% else %}
+<form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/dong-bo-gia/xac-nhan">
+<div class="table-responsive mb-3">
+    <table class="table table-sm bg-white align-middle">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="select-all-preview" checked></th>
+                <th>Tên linh kiện</th>
+                <th>Mã</th>
+                <th>Giá đang dùng trong báo giá</th>
+                <th>Giá hiện tại trong CSDL</th>
+                <th>NCC đang dùng</th>
+                <th>NCC hiện tại trong CSDL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in lines %}
+            <tr>
+                <td><input type="checkbox" class="row-include-checkbox" name="line_ids" value="{{ l.id }}" checked></td>
+                <td>{{ l.ten_linh_kien }}</td>
+                <td>{{ l.ma_linh_kien or "—" }}</td>
+                <td class="{% if l.don_gia != l.supplier_price.don_gia %}text-danger{% endif %}">{{ "{:,.0f}".format(l.don_gia) }}</td>
+                <td class="fw-bold text-success">{{ "{:,.0f}".format(l.supplier_price.don_gia) }}</td>
+                <td class="{% if (l.nha_cung_cap or '') != (l.supplier_price.nha_cung_cap or '') %}text-danger{% endif %}">{{ l.nha_cung_cap or "(chưa rõ)" }}</td>
+                <td class="fw-bold text-success">{{ l.supplier_price.nha_cung_cap or "(chưa rõ)" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<button class="btn btn-primary" type="submit">Cập nhật giá đã chọn ({{ lines|length }} dòng)</button>
+<a class="btn btn-outline-secondary" href="/bao-gia/{{ quote.id }}/linh-kien">Hủy</a>
+</form>
+<script src="{{ static_url('js/select_all_preview.js') }}"></script>
+{% endif %}
+{% endif %}
+{% endblock %}

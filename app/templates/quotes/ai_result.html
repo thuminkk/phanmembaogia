@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Đã thêm xong - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Đã thêm xong</h1>
+<ul class="list-group mb-4" style="max-width: 400px;">
+    <li class="list-group-item d-flex justify-content-between">Đã thêm vào báo giá <strong>{{ ket_qua.moi }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between">Bỏ qua (thiếu dữ liệu) <strong>{{ ket_qua.loi }}</strong></li>
+</ul>
+<a class="btn btn-primary" href="/bao-gia/{{ quote_id }}/linh-kien">Xem lại báo giá</a>
+{% endblock %}

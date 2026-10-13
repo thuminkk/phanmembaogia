@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Ghi chú - {{ quote.ma_bao_gia if quote else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
+<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_subnav.html" %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><strong>Dự án:</strong> {{ quote.project.ten_thiet_bi if quote.project else "—" }}</div>
+    <div class="col-md-3"><strong>Mã project:</strong> {{ quote.project.ma_du_an if quote.project else "—" }}</div>
+    <div class="col-md-3"><strong>Rev báo giá:</strong> {{ quote.ma_bao_gia }}</div>
+    <div class="col-md-3"><strong>Khách hàng:</strong> {{ (quote.project.khach_hang if quote.project else quote.khach_hang) or "—" }}</div>
+</div>
+
+<h2 class="h5 mb-3">Ghi chú</h2>
+<form method="post" action="/bao-gia/{{ quote.id }}/ghi-chu">
+    <textarea class="form-control mb-3" name="ghi_chu" rows="16" placeholder="Ghi chú tự do cho báo giá này...">{{ quote.ghi_chu or '' }}</textarea>
+    <button class="btn btn-primary" type="submit">Lưu</button>
+</form>
+{% endif %}
+{% endblock %}

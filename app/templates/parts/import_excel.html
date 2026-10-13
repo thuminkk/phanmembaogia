@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Nhập từ Excel - {{ app_name }}{% endblock %}
+{% block content %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="/linh-kien">&larr; Quay lại</a>
+<h1 class="h3 mb-4">Nhập linh kiện từ Excel</h1>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="bg-white p-4 rounded shadow-sm mb-4" style="max-width: 640px;">
+    <p class="text-muted small">Chọn file Excel có sheet dạng "Bảng tổng hợp linh kiện" (có cột Tên linh kiện / Mã linh kiện / Maker / Nhà cung cấp / Đơn giá...).</p>
+    <form method="post" action="/linh-kien/nhap-excel" enctype="multipart/form-data" class="d-flex gap-2"
+          onsubmit="document.getElementById('upload-btn').disabled = true; document.getElementById('upload-btn').innerHTML = '<span class=\'spinner-border spinner-border-sm\' role=\'status\'></span> Đang tải lên...';">
+        <input class="form-control" type="file" name="file" accept=".xlsx" required>
+        <button class="btn btn-primary" type="submit" id="upload-btn">Tải lên</button>
+    </form>
+</div>
+
+{% if sheets %}
+<div class="bg-white p-4 rounded shadow-sm" style="max-width: 640px;">
+    <form method="post" action="/linh-kien/nhap-excel/xem-truoc"
+          onsubmit="document.getElementById('preview-btn').disabled = true; document.getElementById('preview-btn').innerHTML = '<span class=\'spinner-border spinner-border-sm\' role=\'status\'></span> Đang xử lý...';">
+        <input type="hidden" name="token" value="{{ token }}">
+        <label class="form-label">Chọn sheet cần nhập</label>
+        <select class="form-select mb-3" name="sheet" required>
+            {% for s in sheets %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-primary" type="submit" id="preview-btn">Xem trước</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

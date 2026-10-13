@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ quote.ma_bao_gia if quote else "Không tìm thấy" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="h3 mb-1">
+            {{ quote.ma_bao_gia }}
+            {% if quote.project %}<a href="/du-an/{{ quote.project.id }}" class="fs-6 ms-2">({{ quote.project.ten_thiet_bi }})</a>{% endif %}
+        </h1>
+    </div>
+    <a href="/bao-gia/{{ quote.id }}/luu-mau" class="btn btn-outline-secondary">Lưu làm mẫu</a>
+</div>
+
+{% include "quotes/_subnav.html" %}
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/bao-gia/{{ quote.id }}/sua" class="row g-2 align-items-end bg-white p-3 rounded shadow-sm mb-4">
+    {% if not quote.is_template %}
+    <div class="col-md-2">
+        <label class="form-label small">Lần đặt hàng</label>
+        <input class="form-control" type="number" min="1" name="dot" value="{{ quote.dot }}">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">Rev</label>
+        <input class="form-control" type="number" min="0" name="rev" value="{{ quote.rev }}">
+    </div>
+    {% else %}
+    <input type="hidden" name="dot" value="{{ quote.dot }}">
+    <input type="hidden" name="rev" value="{{ quote.rev }}">
+    {% endif %}
+    <div class="col-md-3">
+        <label class="form-label small">Trạng thái</label>
+        <select class="form-select" name="trang_thai">
+            {% for opt in trang_thai_options %}
+            <option value="{{ opt }}" {% if quote.trang_thai == opt %}selected{% endif %}>{{ trang_thai_labels[opt] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">Người tính giá</label>
+        <input class="form-control" type="text" name="nguoi_tinh_gia" value="{{ quote.nguoi_tinh_gia or '' }}">
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-outline-primary w-100" type="submit">Lưu</button>
+    </div>
+</form>
+<p class="text-muted small mb-4">Ghi chú tự do cho báo giá này ở tab <a href="/bao-gia/{{ quote.id }}/ghi-chu">Ghi chú</a>.</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Nguyên vật liệu</div>
+            <div class="fs-5 fw-bold">{{ "{:,.0f}".format(totals.nvl) }} đ</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Linh kiện tiêu chuẩn</div>
+            <div class="fs-5 fw-bold">{{ "{:,.0f}".format(totals.linh_kien) }} đ</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <div class="text-muted small">Gia công</div>
+            <div class="fs-5 fw-bold">{{ "{:,.0f}".format(totals.gia_cong) }} đ</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-primary"><div class="card-body">
+            <div class="text-muted small">Tổng chi phí</div>
+            <div class="fs-5 fw-bold text-primary">{{ "{:,.0f}".format(totals.tong) }} đ</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <h2 class="h6">Linh kiện tiêu chuẩn theo Loại</h2>
+        <table class="table table-sm bg-white">
+            <tbody>
+                {% for loai, tien in breakdown_loai.items() %}
+                <tr><td>{{ loai }}</td><td class="text-end">{{ "{:,.0f}".format(tien) }} đ</td></tr>
+                {% else %}
+                <tr><td class="text-muted text-center py-3">Chưa có dòng linh kiện nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-6">
+        <h2 class="h6">Cụm linh kiện <a href="/bao-gia/{{ quote.id }}/linh-kien" class="fs-6 fw-normal">(xem chi tiết)</a></h2>
+        <table class="table table-sm bg-white">
+            <tbody>
+                {% for g in quote.groups %}
+                <tr>
+                    <td>{{ g.ten_cum }}</td>
+                    <td class="text-end">{{ "{:,.0f}".format(g.part_lines | sum(attribute="thanh_tien")) }} đ ({{ g.part_lines | length }} dòng)</td>
+                </tr>
+                {% else %}
+                <tr><td class="text-muted text-center py-3">Chưa có cụm nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

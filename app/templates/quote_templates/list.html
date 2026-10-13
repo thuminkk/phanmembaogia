@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Mẫu báo giá - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Thư viện báo giá mẫu</h1>
+    <a href="/mau-bao-gia/moi" class="btn btn-primary">+ Tạo mẫu mới</a>
+</div>
+
+{% for khach_hang, items in groups %}
+<h2 class="h6 text-muted mb-2">{{ khach_hang }}</h2>
+<div class="table-responsive mb-4">
+    <table class="table table-hover align-middle bg-white">
+        <thead><tr><th>Tên mẫu</th><th>Ngày tạo</th><th></th></tr></thead>
+        <tbody>
+            {% for q in items %}
+            <tr>
+                <td>{{ q.ten_template }}</td>
+                <td>{{ q.created_at.strftime("%d/%m/%Y") }}</td>
+                <td class="d-flex gap-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="/bao-gia/{{ q.id }}/linh-kien">Sửa nội dung</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/mau-bao-gia/{{ q.id }}/sua">Sửa tên/khách hàng</a>
+                    <form method="post" action="/mau-bao-gia/{{ q.id }}/xoa" onsubmit="return confirm('Xóa mẫu này?');">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">Chưa có mẫu báo giá nào. Tạo mới hoặc vào 1 báo giá bấm "Lưu làm mẫu".</p>
+{% endfor %}
+{% endblock %}

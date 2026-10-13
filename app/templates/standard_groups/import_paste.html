@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Dán bảng linh kiện từ Excel - {{ group.ten_cum if group else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not group %}
+<p class="text-muted">Không tìm thấy cụm mẫu.</p>
+{% else %}
+<h1 class="h3 mb-1">{{ group.ten_cum }}</h1>
+<h2 class="h5 mb-3">Dán bảng linh kiện từ Excel</h2>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<p class="text-muted mb-4">
+    Bôi đen một vùng ô trong Excel/Google Sheets, copy (Ctrl+C), bấm vào ô đầu tiên cần điền bên dưới rồi dán
+    (Ctrl+V) — dữ liệu tự trải đúng vào từng cột, không cần dòng tiêu đề. Có thể gõ/sửa trực tiếp trong bảng.
+    Bỏ trống Số lượng thì mặc định là 1, vẫn chỉnh lại được ở bước xem trước kế tiếp. Không gọi AI nào,
+    không giới hạn số lần dùng.
+</p>
+
+<form method="post" action="/cum-tieu-chuan/{{ group.id }}/nhap-dan/xem-truoc" id="paste-form">
+<input type="hidden" name="row_count" id="row_count" value="{{ starter_rows }}">
+<div class="paste-grid-wrap mb-3">
+    <table class="paste-grid" id="paste-grid">
+        <thead>
+            <tr>
+                {% for field, label in columns %}
+                <th>{{ label }}{% if field == "ten_linh_kien" %} *{% endif %}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in range(starter_rows) %}
+            <tr>
+                {% for field, label in columns %}
+                <td><input type="text" name="row_{{ i }}_{{ field }}" data-col="{{ field }}"></td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="add-row-btn">+ 10 dòng</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-grid-btn">Xóa hết ô</button>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/cum-tieu-chuan/{{ group.id }}">Hủy</a>
+        <button class="btn btn-primary" type="submit">Xem trước</button>
+    </div>
+</div>
+</form>
+
+<script>
+const PASTE_GRID_COLUMNS = {{ columns | map(attribute=0) | list | tojson }};
+const PASTE_GRID_ROWS_TO_ADD = 10;
+</script>
+<script src="{{ static_url('js/paste_grid.js') }}"></script>
+{% endif %}
+{% endblock %}

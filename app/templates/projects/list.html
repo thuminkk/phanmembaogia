@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dự án - {{ app_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Dự án <span class="text-muted fs-6">({{ projects|length }} kết quả)</span></h1>
+    <a href="/du-an/moi" class="btn btn-primary">+ Thêm dự án</a>
+</div>
+
+<form method="get" action="/du-an" id="filter-form" class="row g-2 mb-3">
+    <div class="col-sm-6 col-md-3">
+        <input class="form-control" type="text" name="ma_du_an" placeholder="Mã dự án" value="{{ filters.ma_du_an }}" autocomplete="off">
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <input class="form-control" type="text" name="ten_thiet_bi" placeholder="Tên thiết bị" value="{{ filters.ten_thiet_bi }}" autocomplete="off">
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <select class="form-select" name="khach_hang">
+            <option value="">-- Khách hàng --</option>
+            {% for kh in khach_hang_options %}
+            <option value="{{ kh }}" {% if filters.khach_hang == kh %}selected{% endif %}>{{ kh }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <noscript><div class="col-sm-6 col-md-3"><button class="btn btn-secondary" type="submit">Lọc</button></div></noscript>
+</form>
+
+{% if filters.ma_du_an or filters.ten_thiet_bi or filters.khach_hang %}
+<div class="mb-3">
+    <a href="/du-an" class="btn btn-sm btn-outline-secondary">Bỏ lọc</a>
+</div>
+{% endif %}
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle bg-white">
+        <thead>
+            <tr>
+                <th>Mã dự án</th>
+                <th>Tên thiết bị</th>
+                <th>Khách hàng</th>
+                <th>Số báo giá</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in projects %}
+            <tr>
+                <td><a href="/du-an/{{ p.id }}">{{ p.ma_du_an }}</a></td>
+                <td>{{ p.ten_thiet_bi }}</td>
+                <td>{{ p.khach_hang or "—" }}</td>
+                <td>{{ p.quotes | selectattr("is_active") | list | length }}</td>
+                <td class="d-flex gap-2">
+                    <a href="/du-an/{{ p.id }}" class="btn btn-sm btn-outline-secondary">Chi tiết</a>
+                    <form method="post" action="/du-an/{{ p.id }}/xoa" onsubmit="return confirm('Xóa dự án này? Toàn bộ báo giá thuộc dự án cũng sẽ bị ẩn theo.');">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">
+                    {% if filters.ma_du_an or filters.ten_thiet_bi or filters.khach_hang %}Không có dự án phù hợp.{% else %}Chưa có dự án nào.{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="{{ static_url('js/parts.js') }}"></script>
+{% endblock %}

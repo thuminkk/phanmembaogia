@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ project.ma_du_an if project else "Không tìm thấy" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not project %}
+<p class="text-muted">Không tìm thấy dự án.</p>
+{% else %}
+<a href="/du-an" class="d-inline-block mb-3 text-decoration-none">&larr; Quay lại danh sách dự án</a>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ project.ma_du_an }} — {{ project.ten_thiet_bi }}</h1>
+        <div class="text-muted">Khách hàng: {{ project.khach_hang or "—" }} · Chủng loại: {{ project.chung_loai or "—" }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/du-an/{{ project.id }}/sua">Sửa thông tin</a>
+        <a class="btn btn-primary" href="/du-an/{{ project.id }}/bao-gia/moi">+ Tạo báo giá mới</a>
+        <form method="post" action="/du-an/{{ project.id }}/xoa" onsubmit="return confirm('Xóa dự án này? Toàn bộ báo giá thuộc dự án cũng sẽ bị ẩn theo.');">
+            <button class="btn btn-outline-danger" type="submit">Xóa dự án</button>
+        </form>
+    </div>
+</div>
+
+<h2 class="h5 mb-3">Các phiên bản báo giá</h2>
+<div class="table-responsive">
+    <table class="table table-hover align-middle bg-white">
+        <thead>
+            <tr>
+                <th>Mã báo giá</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+                <th>Người tính giá</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for q in quotes %}
+            <tr>
+                <td><a href="/bao-gia/{{ q.id }}">{{ q.ma_bao_gia }}</a></td>
+                <td>{{ q.trang_thai }}</td>
+                <td>{{ q.created_at.strftime("%d/%m/%Y") }}</td>
+                <td>{{ q.nguoi_tinh_gia or "—" }}</td>
+                <td class="d-flex gap-2">
+                    <a href="/bao-gia/{{ q.id }}" class="btn btn-sm btn-outline-secondary">Mở</a>
+                    <a href="/du-an/{{ project.id }}/bao-gia/moi?source_quote_id={{ q.id }}" class="btn btn-sm btn-outline-primary" title="Copy phiên bản này thành rev mới, giá linh kiện tự cập nhật theo CSDL hiện tại">Copy rev</a>
+                    <form method="post" action="/bao-gia/{{ q.id }}/xoa" onsubmit="return confirm('Xóa phiên bản báo giá ' + '{{ q.ma_bao_gia }}' + '?');">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted py-4">Chưa có báo giá nào cho dự án này.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

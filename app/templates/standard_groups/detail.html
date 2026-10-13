@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ group.ten_cum if group else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not group %}
+<p class="text-muted">Không tìm thấy cụm mẫu.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="/cum-tieu-chuan">&larr; Quay lại</a>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ group.ten_cum }}</h1>
+        <div class="text-muted">{{ group.mo_ta or "—" }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/cum-tieu-chuan/{{ group.id }}/sua">Sửa tên/mô tả</a>
+        <a class="btn btn-outline-secondary" href="/cum-tieu-chuan/{{ group.id }}/nhap-dan">Dán trực tiếp từ Excel</a>
+        <a class="btn btn-outline-secondary" href="/cum-tieu-chuan/{{ group.id }}/nhap-ai">Nhập bằng AI</a>
+        <form method="post" action="/cum-tieu-chuan/{{ group.id }}/xoa" onsubmit="return confirm('Xóa cụm mẫu này? Toàn bộ linh kiện trong cụm cũng sẽ bị xóa khỏi cụm mẫu.');">
+            <button class="btn btn-outline-danger" type="submit">Xóa cụm</button>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive mb-3">
+    <table class="table table-sm bg-white align-middle">
+        <thead><tr><th>Tên</th><th>Mã</th><th>Hãng</th><th>Nhà cung cấp mặc định</th><th>SL</th><th>Ghi chú</th><th></th></tr></thead>
+        <tbody>
+            {% for l in group.lines %}
+            <tr>
+                <td>{{ l.part.ten_linh_kien }}</td>
+                <td>{{ l.part.ma_linh_kien or "—" }}</td>
+                <td>{{ l.part.hang or "—" }}</td>
+                <td>
+                    <span class="text-muted small">{{ (l.part.price.nha_cung_cap if l.part.price else None) or "(chưa rõ NCC)" }}</span>
+                </td>
+                <td><input class="form-control form-control-sm" form="line-{{ l.id }}" type="number" step="1" name="so_luong" value="{{ "{:g}".format(l.so_luong) }}" style="width:80px"></td>
+                <td><input class="form-control form-control-sm" form="line-{{ l.id }}" name="ghi_chu" value="{{ l.ghi_chu or '' }}"></td>
+                <td class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary" form="line-{{ l.id }}" type="submit">Lưu</button>
+                    <button class="btn btn-sm btn-outline-danger" form="del-line-{{ l.id }}" type="submit" onclick="return confirm('Xóa dòng này?');">Xóa</button>
+                </td>
+            </tr>
+            <tr class="d-none"><td colspan="7">
+                <form id="line-{{ l.id }}" method="post" action="/cum-tieu-chuan/{{ group.id }}/dong/{{ l.id }}/sua"></form>
+                <form id="del-line-{{ l.id }}" method="post" action="/cum-tieu-chuan/{{ group.id }}/dong/{{ l.id }}/xoa"></form>
+            </td></tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-3">Chưa có linh kiện trong cụm mẫu này.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="bg-white p-3 rounded shadow-sm mb-4" style="max-width: 1000px;">
+    <label class="form-label small fw-bold">Tìm trong CSDL linh kiện (gõ tên hoặc mã)</label>
+    <input class="form-control mb-1" type="text" id="part-search" placeholder="VD: xi lanh, cảm biến, SMC...">
+    <div class="list-group mb-3" id="part-search-results"></div>
+
+    <form method="post" action="/cum-tieu-chuan/{{ group.id }}/dong" class="row g-2">
+        <input type="hidden" name="part_id" id="line-part-id">
+        <input type="hidden" name="supplier_price_id" id="line-supplier-price-id">
+        <div class="col-md-3"><input class="form-control form-control-sm" id="ten_linh_kien" name="ten_linh_kien" placeholder="Tên linh kiện *" required></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" id="ma_linh_kien" name="ma_linh_kien" placeholder="Mã"></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" id="hang" name="hang" placeholder="Hãng"></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" id="nha_cung_cap" name="nha_cung_cap" placeholder="Nhà cung cấp"></div>
+        <div class="col-md-1"><input class="form-control form-control-sm" id="don_vi" name="don_vi" placeholder="Đ.vị"></div>
+        <div class="col-md-1"><input class="form-control form-control-sm" type="number" step="1" name="so_luong" placeholder="SL" value="1"></div>
+        <div class="col-md-1"><input class="form-control form-control-sm" id="don_gia" type="number" step="0.01" name="don_gia" placeholder="Giá"></div>
+        <div class="col-12 text-muted small">Chọn 1 kết quả tìm kiếm ở trên để tự điền (kèm đúng NCC mặc định), hoặc gõ tay — nếu linh kiện/giá chưa có trong CSDL, hệ thống sẽ tự thêm vào.</div>
+        <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
+    </form>
+</div>
+
+<script src="{{ static_url('js/quotes.js') }}"></script>
+{% endif %}
+{% endblock %}

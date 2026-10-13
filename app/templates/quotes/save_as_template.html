@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Lưu làm mẫu - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<h1 class="h3 mb-4">Lưu làm mẫu báo giá</h1>
+<p class="text-muted">Từ báo giá: <strong>{{ quote.ma_bao_gia }}</strong> — toàn bộ NVL/linh kiện/gia công sẽ được nhân bản thành 1 mẫu mới, không ảnh hưởng báo giá gốc.</p>
+
+<form method="post" action="/bao-gia/{{ quote.id }}/luu-mau" class="bg-white p-4 rounded shadow-sm" style="max-width: 640px;">
+    <div class="mb-3">
+        <label class="form-label">Tên mẫu *</label>
+        <input class="form-control" type="text" name="ten_template" placeholder="VD: Mẫu máy dán keo - PIONEER" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Khách hàng</label>
+        <input class="form-control" type="text" name="khach_hang" placeholder="VD: PIONEER">
+    </div>
+    <button class="btn btn-primary" type="submit">Lưu làm mẫu</button>
+    <a class="btn btn-outline-secondary" href="/bao-gia/{{ quote.id }}">Hủy</a>
+</form>
+{% endif %}
+{% endblock %}

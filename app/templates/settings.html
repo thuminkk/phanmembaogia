@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Cài đặt - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Cài đặt AI</h1>
+
+{% if saved %}
+<div class="alert alert-success">Đã lưu cài đặt.</div>
+{% endif %}
+
+<form method="post" action="/cai-dat" class="bg-white p-4 rounded shadow-sm" style="max-width: 640px;">
+    <label class="form-label">Nhà cung cấp AI đang dùng cho tính năng "Nhập nhanh bằng AI"</label>
+    <select class="form-select mb-4" name="active_provider">
+        {% for key, label in provider_labels.items() %}
+        <option value="{{ key }}" {% if settings.active_provider == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <div class="mb-3">
+        <label class="form-label">Claude API key</label>
+        <input class="form-control" type="text" name="claude_api_key" value="{{ settings.claude_api_key or '' }}" placeholder="sk-ant-...">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">OpenAI API key</label>
+        <input class="form-control" type="text" name="openai_api_key" value="{{ settings.openai_api_key or '' }}" placeholder="sk-...">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Gemini API key</label>
+        <input class="form-control" type="text" name="gemini_api_key" value="{{ settings.gemini_api_key or '' }}">
+    </div>
+    <div class="mb-4">
+        <label class="form-label">DeepSeek API key</label>
+        <input class="form-control" type="text" name="deepseek_api_key" value="{{ settings.deepseek_api_key or '' }}">
+    </div>
+
+    <button class="btn btn-primary" type="submit">Lưu</button>
+</form>
+{% endblock %}

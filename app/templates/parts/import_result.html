@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Kết quả nhập - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Đã nhập xong</h1>
+<ul class="list-group mb-4" style="max-width: 400px;">
+    <li class="list-group-item d-flex justify-content-between">Linh kiện/NCC mới <strong>{{ ket_qua.moi }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between">Đã cập nhật giá <strong>{{ ket_qua.cap_nhat_gia }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between">Không đổi <strong>{{ ket_qua.khong_doi }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between">Bỏ qua (thiếu dữ liệu) <strong>{{ ket_qua.loi }}</strong></li>
+</ul>
+<a class="btn btn-primary" href="/linh-kien">Xem danh sách linh kiện</a>
+{% endblock %}

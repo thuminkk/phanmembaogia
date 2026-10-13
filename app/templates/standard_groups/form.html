@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{% if group %}Sửa cụm mẫu{% elif source_group %}Copy cụm mẫu{% else %}Tạo cụm mẫu{% endif %} - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">{% if group %}Sửa cụm mẫu{% elif source_group %}Copy cụm mẫu "{{ source_group.ten_cum }}"{% else %}Tạo cụm mẫu mới{% endif %}</h1>
+
+{% if source_group %}
+<p class="text-muted">Toàn bộ {{ source_group.lines | length }} linh kiện trong cụm "{{ source_group.ten_cum }}" sẽ được copy sang cụm mới — đặt tên khác rồi sửa lại thoải mái, không ảnh hưởng cụm gốc.</p>
+{% endif %}
+
+<form method="post" action="{% if group %}/cum-tieu-chuan/{{ group.id }}/sua{% else %}/cum-tieu-chuan/moi{% endif %}" class="bg-white p-4 rounded shadow-sm" style="max-width: 640px;">
+    {% if source_group %}
+    <input type="hidden" name="source_group_id" value="{{ source_group.id }}">
+    {% endif %}
+    <div class="mb-3">
+        <label class="form-label">Tên cụm *</label>
+        <input class="form-control" type="text" name="ten_cum" placeholder="VD: Cụm HMI" required value="{% if group %}{{ group.ten_cum }}{% elif source_group %}{{ source_group.ten_cum }} (copy){% endif %}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Mô tả</label>
+        <textarea class="form-control" name="mo_ta" rows="2">{% if group %}{{ group.mo_ta or '' }}{% elif source_group %}{{ source_group.mo_ta or '' }}{% endif %}</textarea>
+    </div>
+    <button class="btn btn-primary" type="submit">Lưu</button>
+    <a class="btn btn-outline-secondary" href="/cum-tieu-chuan">Hủy</a>
+</form>
+{% endblock %}

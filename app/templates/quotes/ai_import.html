@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Nhập bằng AI - {{ quote.ma_bao_gia if quote else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_subnav.html" %}
+
+<h2 class="h5 mb-1">Nhập nhanh bằng AI (văn bản/ảnh)</h2>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="bg-white p-4 rounded shadow-sm" style="max-width: 720px;">
+    <p class="text-muted small">
+        Dán tin nhắn và/hoặc tải lên 1 ảnh, file PDF hoặc Excel (chụp bảng linh kiện, tin nhắn NCC, bảng giá
+        PDF/Excel...) — AI (<strong>{{ active_provider }}</strong>) sẽ tự tách thành các dòng linh kiện để bạn
+        duyệt trước khi thêm thẳng vào báo giá. Đổi nhà cung cấp AI tại trang <a href="/cai-dat">Cài đặt</a>.
+    </p>
+    <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/nhap-ai/xem-truoc" enctype="multipart/form-data"
+          onsubmit="document.getElementById('ai-submit-btn').disabled = true; document.getElementById('ai-submit-btn').innerHTML = '<span class=\'spinner-border spinner-border-sm\' role=\'status\'></span> Đang phân tích... (có thể mất 30-60 giây)';">
+        <textarea class="form-control mb-3" name="message" rows="6" placeholder="Dán tin nhắn (không bắt buộc nếu đã có ảnh)... (có thể dán trực tiếp ảnh bằng Ctrl+V)">{{ message or "" }}</textarea>
+
+        <div class="mb-3">
+            <label class="form-label small">File đính kèm (không bắt buộc) — ảnh, PDF hoặc Excel (.xlsx/.xls); có thể dán trực tiếp ảnh bằng Ctrl+V vào ô văn bản ở trên</label>
+            <input class="form-control" type="file" name="file" accept="image/*,.pdf,.xlsx,.xls">
+        </div>
+        {% if not supports_vision %}
+        <div class="alert alert-secondary small">
+            {{ active_provider }} không hỗ trợ đọc ảnh — nếu tải lên ảnh hoặc PDF dạng ảnh chụp/quét sẽ không đọc được, chỉ dùng được văn bản/PDF có chữ/Excel. Đổi sang Claude, OpenAI hoặc Gemini ở trang Cài đặt nếu cần đọc ảnh.
+        </div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label small">Xếp vào cụm</label>
+            <select class="form-select" name="group_id">
+                <option value="">-- Chưa phân cụm --</option>
+                {% for g in quote.groups %}
+                <option value="{{ g.id }}">{{ g.ten_cum }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button class="btn btn-primary" type="submit" id="ai-submit-btn">Phân tích bằng AI</button>
+        <a class="btn btn-outline-secondary" href="/bao-gia/{{ quote.id }}/linh-kien">Hủy</a>
+    </form>
+</div>
+<script src="{{ static_url('js/ai_paste.js') }}"></script>
+{% endif %}
+{% endblock %}

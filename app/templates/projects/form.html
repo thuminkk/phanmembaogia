@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{% if project %}Sửa dự án{% else %}Thêm dự án{% endif %} - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">{% if project %}Sửa dự án{% else %}Thêm dự án mới{% endif %}</h1>
+
+{% if error %}
+<div class="alert alert-danger" style="max-width: 720px;">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{% if project %}/du-an/{{ project.id }}/sua{% else %}/du-an/moi{% endif %}" class="bg-white p-4 rounded shadow-sm" style="max-width: 720px;">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Mã dự án *</label>
+            <input class="form-control" type="text" name="ma_du_an" placeholder="VD: PJ26-01529" required value="{{ project.ma_du_an if project else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Tên thiết bị *</label>
+            <input class="form-control" type="text" name="ten_thiet_bi" required value="{{ project.ten_thiet_bi if project else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Khách hàng</label>
+            <input class="form-control" type="text" name="khach_hang" value="{{ (project.khach_hang or '') if project else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Chủng loại</label>
+            <input class="form-control" type="text" name="chung_loai" value="{{ (project.chung_loai or '') if project else '' }}">
+        </div>
+        <div class="col-12">
+            <label class="form-label">Địa chỉ</label>
+            <input class="form-control" type="text" name="dia_chi" value="{{ (project.dia_chi or '') if project else '' }}">
+        </div>
+        <div class="col-12">
+            <label class="form-label">Yêu cầu đặc biệt</label>
+            <textarea class="form-control" name="yeu_cau_dac_biet" rows="2">{{ (project.yeu_cau_dac_biet or '') if project else '' }}</textarea>
+        </div>
+        {% if not project %}
+        <div class="col-12"><hr><div class="text-muted small mb-2">Báo giá đầu tiên của dự án sẽ được tạo luôn:</div></div>
+        <div class="col-md-6">
+            <label class="form-label">Lần đặt hàng</label>
+            <input class="form-control" type="number" min="1" name="dot" value="1" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Rev báo giá</label>
+            <input class="form-control" type="number" min="0" name="rev" value="0" required>
+        </div>
+        <div class="col-12">
+            <label class="form-label">Nội dung bắt đầu từ</label>
+            <select class="form-select" name="source_quote_id">
+                <option value="">-- Tạo trống --</option>
+                {% for khach_hang, items in template_groups %}
+                <optgroup label="Mẫu — {{ khach_hang }}">
+                    {% for t in items %}
+                    <option value="{{ t.id }}">{{ t.ten_template }}</option>
+                    {% endfor %}
+                </optgroup>
+                {% endfor %}
+                {% if source_quotes %}
+                <optgroup label="Báo giá cũ (mọi dự án)">
+                    {% for q in source_quotes %}
+                    <option value="{{ q.id }}">{{ q.ma_bao_gia }}{% if q.project %} — {{ q.project.ten_thiet_bi }}{% endif %}</option>
+                    {% endfor %}
+                </optgroup>
+                {% endif %}
+            </select>
+            <div class="form-text">Chọn 1 mẫu đúng chuẩn khách hàng (nếu có) để nạp sẵn NVL/linh kiện/gia công, đỡ phải nhập lại từ đầu.</div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Lưu</button>
+        <a class="btn btn-outline-secondary" href="{% if project %}/du-an/{{ project.id }}{% else %}/du-an{% endif %}">Hủy</a>
+    </div>
+</form>
+{% endblock %}

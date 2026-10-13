@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Tạo báo giá mới - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Tạo báo giá mới</h1>
+<p class="text-muted mb-4">Dự án: <strong>{{ project.ma_du_an }}</strong> — {{ project.ten_thiet_bi }}</p>
+
+{% if error %}
+<div class="alert alert-danger" style="max-width: 640px;">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/du-an/{{ project.id }}/bao-gia/moi" class="bg-white p-4 rounded shadow-sm" style="max-width: 640px;">
+    <div class="row g-3 mb-4">
+        <div class="col-6">
+            <label class="form-label fw-bold">Lần đặt hàng</label>
+            <input class="form-control" type="number" min="1" name="dot" value="{{ suggested_dot }}" required>
+            <div class="form-text">01 = lần đầu; tăng lên khi khách đặt lại (thiết kế giống nhau nhưng giá linh kiện đổi...).</div>
+        </div>
+        <div class="col-6">
+            <label class="form-label fw-bold">Rev báo giá</label>
+            <input class="form-control" type="number" min="0" name="rev" value="{{ suggested_rev }}" required>
+            <div class="form-text">00 = bản đầu của lần đặt hàng này; tăng lên khi sửa lại do điều chỉnh thiết kế.</div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Nội dung bắt đầu từ</label>
+        <select class="form-select" name="source_quote_id">
+            <option value="">-- Tạo trống --</option>
+            {% for khach_hang, items in template_groups %}
+            <optgroup label="Mẫu — {{ khach_hang }}">
+                {% for t in items %}
+                <option value="{{ t.id }}" {% if preselected_source_id and t.id == preselected_source_id %}selected{% endif %}>{{ t.ten_template }}</option>
+                {% endfor %}
+            </optgroup>
+            {% endfor %}
+            {% if source_quotes %}
+            <optgroup label="Báo giá cũ (mọi dự án)">
+                {% for q in source_quotes %}
+                <option value="{{ q.id }}" {% if preselected_source_id and q.id == preselected_source_id %}selected{% endif %}>{{ q.ma_bao_gia }}{% if q.project %} — {{ q.project.ten_thiet_bi }}{% endif %}</option>
+                {% endfor %}
+            </optgroup>
+            {% endif %}
+        </select>
+        {% if preselected_source_id %}
+        <div class="form-text">Đang copy nội dung + <strong>cập nhật giá linh kiện mới nhất từ CSDL</strong> từ phiên bản đã chọn.</div>
+        {% endif %}
+    </div>
+
+    <button class="btn btn-primary" type="submit">Tạo báo giá</button>
+    <a class="btn btn-outline-secondary" href="/du-an/{{ project.id }}">Hủy</a>
+</form>
+{% endblock %}

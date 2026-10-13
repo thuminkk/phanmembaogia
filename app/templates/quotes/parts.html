@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Linh kiện tiêu chuẩn - {{ quote.ma_bao_gia if quote else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
+<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_subnav.html" %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">Linh kiện tiêu chuẩn</h2>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="collapse-all-groups">Thu gọn tất cả</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="expand-all-groups">Mở tất cả</button>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="save-all-lines">Lưu tất cả</button>
+        <a class="btn btn-sm btn-outline-warning" href="/bao-gia/{{ quote.id }}/linh-kien/dong-bo-gia">Đồng bộ giá theo CSDL</a>
+        <a class="btn btn-sm btn-outline-success" href="/bao-gia/{{ quote.id }}/linh-kien/xuat-excel">Xuất Excel</a>
+    </div>
+</div>
+
+<div class="d-flex gap-2 mb-4">
+    <form method="post" action="/bao-gia/{{ quote.id }}/cum" class="d-flex gap-2" style="max-width: 500px;">
+        <input class="form-control form-control-sm" name="ten_cum" placeholder="Tên cụm mới (VD: Cụm tủ điện)" required>
+        <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit">+ Thêm cụm</button>
+    </form>
+    <a href="/bao-gia/{{ quote.id }}/linh-kien/nhap-ai" class="btn btn-sm btn-outline-secondary text-nowrap">Nhập bằng AI (văn bản/ảnh)</a>
+    <a href="/bao-gia/{{ quote.id }}/linh-kien/nhap-dan" class="btn btn-sm btn-outline-secondary text-nowrap">Dán trực tiếp từ Excel</a>
+    {% if standard_groups %}
+    <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/ap-dung-cum-mau" class="d-flex gap-2">
+        <select class="form-select form-select-sm" name="standard_group_id" required>
+            <option value="">-- Chọn cụm mẫu --</option>
+            {% for sg in standard_groups %}
+            <option value="{{ sg.id }}">{{ sg.ten_cum }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit">+ Thêm cụm từ mẫu</button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="mb-3 d-flex align-items-center gap-2">
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" id="select-all">
+        <label class="form-check-label small" for="select-all">Chọn tất cả</label>
+    </div>
+    <button type="submit" form="bulk-delete-form" id="bulk-delete-btn" class="btn btn-outline-danger btn-sm" disabled onclick="return confirm('Xóa các dòng linh kiện đã chọn?');">
+        Xóa đã chọn (<span id="selected-count">0</span>)
+    </button>
+    <form id="bulk-delete-form" method="post" action="/bao-gia/{{ quote.id }}/linh-kien/xoa-nhieu"></form>
+</div>
+
+{% macro line_row(l, quote_id, groups) %}
+<tr data-line-id="{{ l.id }}">
+    <td><input type="checkbox" class="row-checkbox" form="bulk-delete-form" name="ids" value="{{ l.id }}"></td>
+    <td class="drag-handle" draggable="true" title="Kéo để sắp xếp / đổi cụm">⠿⠿</td>
+    <td><input class="form-control form-control-sm" form="pl-{{ l.id }}" name="ten_linh_kien" value="{{ l.ten_linh_kien }}" required></td>
+    <td><input class="form-control form-control-sm" form="pl-{{ l.id }}" name="ma_linh_kien" value="{{ l.ma_linh_kien or '' }}"></td>
+    <td><input class="form-control form-control-sm" form="pl-{{ l.id }}" name="hang" value="{{ l.hang or '' }}"></td>
+    <td>
+        <span class="text-muted small">{{ l.nha_cung_cap or "(chưa rõ NCC)" }}</span>
+    </td>
+    <td><input class="form-control form-control-sm" form="pl-{{ l.id }}" name="don_vi" value="{{ l.don_vi or '' }}" style="width:70px"></td>
+    <td><input class="form-control form-control-sm" form="pl-{{ l.id }}" type="number" step="1" name="so_luong" value="{{ "{:g}".format(l.so_luong) }}" style="width:80px"></td>
+    <td>
+        <span class="fw-semibold">{{ "{:,.0f}".format(l.don_gia) }}</span>
+        {% if l.gia_lech_csdl %}
+        <div class="small mt-1"><a href="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/cap-nhat-gia" class="badge text-bg-warning text-decoration-none">Lệch giá CSDL — Cập nhật giá</a></div>
+        {% endif %}
+    </td>
+    <td>{{ "{:,.0f}".format(l.thanh_tien) }}</td>
+    <td>
+        <select class="form-select form-select-sm" form="cum-{{ l.id }}" name="group_id" style="width:160px" onchange="this.form.submit()">
+            <option value="">-- Chưa phân cụm --</option>
+            {% for g in groups %}
+            <option value="{{ g.id }}" {% if l.group_id == g.id %}selected{% endif %}>{{ g.ten_cum }}</option>
+            {% endfor %}
+        </select>
+    </td>
+    <td class="d-flex gap-1">
+        <button class="btn btn-sm btn-outline-primary" form="pl-{{ l.id }}" type="submit">Lưu</button>
+        <button class="btn btn-sm btn-outline-danger" form="del-pl-{{ l.id }}" type="submit" onclick="return confirm('Xóa dòng này?');">Xóa</button>
+    </td>
+</tr>
+<tr class="d-none"><td colspan="12">
+    <form id="pl-{{ l.id }}" method="post" action="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/sua"></form>
+    <form id="cum-{{ l.id }}" method="post" action="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/doi-cum"></form>
+    <form id="del-pl-{{ l.id }}" method="post" action="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/xoa"></form>
+</td></tr>
+{% endmacro %}
+
+{% for g in quote.groups %}
+<div class="card mb-3 group-card-{{ loop.index0 % 8 }}">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#cum-body-{{ g.id }}" aria-expanded="true" aria-controls="cum-body-{{ g.id }}" title="Thu gọn/Mở cụm">
+                <span class="collapse-caret">▾</span>
+            </button>
+            <form method="post" action="/bao-gia/{{ quote.id }}/cum/{{ g.id }}/sua" class="d-flex align-items-center gap-2">
+                <input type="hidden" name="mo_ta_co_khi" value="{{ g.mo_ta_co_khi or '' }}">
+                <input type="hidden" name="mo_ta_dien" value="{{ g.mo_ta_dien or '' }}">
+                <input type="hidden" name="mo_ta_khi_nen" value="{{ g.mo_ta_khi_nen or '' }}">
+                <input type="hidden" name="mo_ta_thuy_luc" value="{{ g.mo_ta_thuy_luc or '' }}">
+                <input type="hidden" name="redirect_to" value="linh-kien">
+                <input class="form-control form-control-sm fw-bold border-0" style="width:260px;" name="ten_cum" value="{{ g.ten_cum }}">
+                <button class="btn btn-sm btn-link" type="submit">Đổi tên</button>
+            </form>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-muted small">{{ "{:,.0f}".format(g.part_lines | sum(attribute="thanh_tien")) }} đ</span>
+            <div class="d-flex gap-1">
+                <form method="post" action="/bao-gia/{{ quote.id }}/cum/{{ g.id }}/di-chuyen">
+                    <input type="hidden" name="huong" value="len">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" title="Chuyển lên" {% if loop.first %}disabled{% endif %}>▲</button>
+                </form>
+                <form method="post" action="/bao-gia/{{ quote.id }}/cum/{{ g.id }}/di-chuyen">
+                    <input type="hidden" name="huong" value="xuong">
+                    <button class="btn btn-sm btn-outline-secondary" type="submit" title="Chuyển xuống" {% if loop.last %}disabled{% endif %}>▼</button>
+                </form>
+            </div>
+            <form method="post" action="/bao-gia/{{ quote.id }}/cum/{{ g.id }}/xoa" onsubmit="return confirm('Xóa cụm này? Các linh kiện bên trong sẽ chuyển về Chưa phân cụm.');">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Xóa cụm</button>
+            </form>
+        </div>
+    </div>
+    <div class="collapse show cum-body" id="cum-body-{{ g.id }}">
+        <div>
+            <table class="table table-sm align-middle mb-0 quote-parts-table">
+                <thead><tr><th><input type="checkbox" class="group-select-all" title="Chọn tất cả trong cụm này"></th><th></th><th>Tên</th><th>Mã</th><th>Hãng</th><th>NCC</th><th>Đ.vị</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th><th>Cụm</th><th></th></tr></thead>
+                <tbody class="drop-zone" data-group-id="{{ g.id }}" data-quote-id="{{ quote.id }}">
+                    {% for l in g.part_lines %}{{ line_row(l, quote.id, quote.groups) }}{% else %}
+                    <tr><td colspan="12" class="text-center text-muted py-3">Chưa có linh kiện trong cụm này.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% set ungrouped = quote.part_lines | selectattr("group_id", "none") | list %}
+<div class="card mb-4">
+    <div class="card-header bg-white d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#cum-body-unassigned" aria-expanded="true" aria-controls="cum-body-unassigned" title="Thu gọn/Mở">
+            <span class="collapse-caret">▾</span>
+        </button>
+        <strong>Chưa phân cụm</strong>
+    </div>
+    <div class="collapse show cum-body" id="cum-body-unassigned">
+        <div>
+            <table class="table table-sm align-middle mb-0 quote-parts-table">
+                <thead><tr><th><input type="checkbox" class="group-select-all" title="Chọn tất cả trong cụm này"></th><th></th><th>Tên</th><th>Mã</th><th>Hãng</th><th>NCC</th><th>Đ.vị</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th><th>Cụm</th><th></th></tr></thead>
+                <tbody class="drop-zone" data-group-id="" data-quote-id="{{ quote.id }}">
+                    {% for l in ungrouped %}{{ line_row(l, quote.id, quote.groups) }}{% else %}
+                    <tr><td colspan="12" class="text-center text-muted py-3">Không có dòng nào.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-3 rounded shadow-sm mb-4" style="max-width: 1000px;">
+    <label class="form-label small fw-bold">Tìm trong CSDL linh kiện (gõ tên hoặc mã)</label>
+    <input class="form-control mb-1" type="text" id="part-search" placeholder="VD: xi lanh, cảm biến, SMC...">
+    <div class="list-group mb-3" id="part-search-results"></div>
+
+    <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien" class="row g-2">
+        <input type="hidden" name="part_id" id="line-part-id">
+        <input type="hidden" name="supplier_price_id" id="line-supplier-price-id">
+        <div class="col-md-3"><input class="form-control form-control-sm" id="ten_linh_kien" name="ten_linh_kien" placeholder="Tên linh kiện *" required></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" id="ma_linh_kien" name="ma_linh_kien" placeholder="Mã"></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" id="hang" name="hang" placeholder="Hãng"></div>
+        <div class="col-md-2"><input class="form-control form-control-sm" id="nha_cung_cap" name="nha_cung_cap" placeholder="Nhà cung cấp"></div>
+        <div class="col-md-1"><input class="form-control form-control-sm" id="don_vi" name="don_vi" placeholder="Đ.vị"></div>
+        <div class="col-md-1"><input class="form-control form-control-sm" type="number" step="1" name="so_luong" placeholder="SL" value="1"></div>
+        <div class="col-md-1"><input class="form-control form-control-sm" id="don_gia" type="number" step="0.01" name="don_gia" placeholder="Giá"></div>
+        <div class="col-md-3">
+            <select class="form-select form-select-sm" name="group_id">
+                <option value="">-- Chưa phân cụm --</option>
+                {% for g in quote.groups %}
+                <option value="{{ g.id }}">{{ g.ten_cum }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 text-muted small">Chọn 1 kết quả tìm kiếm ở trên để tự điền, hoặc gõ tay trực tiếp — nếu linh kiện/giá chưa có trong CSDL, hệ thống sẽ tự thêm vào. Chọn cụm ở trên để xếp dòng này vào đúng cụm.</div>
+        <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
+    </form>
+</div>
+
+<script src="{{ static_url('js/parts.js') }}"></script>
+<script src="{{ static_url('js/quotes.js') }}"></script>
+{% endif %}
+{% endblock %}

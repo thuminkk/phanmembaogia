@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Tổng quan</h1>
+<div class="row g-3">
+    <div class="col-sm-6 col-lg-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted small">Số linh kiện trong CSDL</div>
+                <div class="fs-2 fw-bold">{{ stats.so_linh_kien or "—" }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted small">Số dự án / báo giá</div>
+                <div class="fs-2 fw-bold">{{ stats.so_du_an or "—" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+<p class="text-muted mt-4">Đây là khung giao diện bước đầu. Dữ liệu linh kiện và báo giá sẽ được kết nối ở bước tiếp theo.</p>
+{% endblock %}

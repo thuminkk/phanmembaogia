@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Gia công - {{ quote.ma_bao_gia if quote else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
+<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_subnav.html" %}
+
+<h2 class="h5 mb-3">Linh kiện gia công</h2>
+<div class="table-responsive mb-2">
+    <table class="table table-sm bg-white align-middle">
+        <thead><tr><th>Tên</th><th>Mã bản vẽ</th><th>Vật liệu</th><th>SL</th><th>Đơn giá</th><th>NCC</th><th>Thành tiền</th><th></th></tr></thead>
+        <tbody>
+            {% for l in quote.fabricated_lines %}
+            <tr>
+                <td><input class="form-control form-control-sm" form="fl-{{ l.id }}" name="ten_linh_kien" value="{{ l.ten_linh_kien }}" required></td>
+                <td><input class="form-control form-control-sm" form="fl-{{ l.id }}" name="ma_ban_ve" value="{{ l.ma_ban_ve or '' }}"></td>
+                <td><input class="form-control form-control-sm" form="fl-{{ l.id }}" name="vat_lieu" value="{{ l.vat_lieu or '' }}"></td>
+                <td><input class="form-control form-control-sm" form="fl-{{ l.id }}" type="number" step="0.01" name="so_luong" value="{{ "{:g}".format(l.so_luong) }}" style="width:80px"></td>
+                <td><input class="form-control form-control-sm" form="fl-{{ l.id }}" type="number" step="0.01" name="don_gia" value="{{ l.don_gia }}" style="width:110px"></td>
+                <td><input class="form-control form-control-sm" form="fl-{{ l.id }}" name="nha_cung_cap" value="{{ l.nha_cung_cap or '' }}"></td>
+                <td>{{ "{:,.0f}".format(l.so_luong * l.don_gia) }}</td>
+                <td class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary" form="fl-{{ l.id }}" type="submit">Lưu</button>
+                    <button class="btn btn-sm btn-outline-danger" form="del-fl-{{ l.id }}" type="submit" onclick="return confirm('Xóa dòng này?');">Xóa</button>
+                </td>
+            </tr>
+            <tr class="d-none"><td colspan="8">
+                <form id="fl-{{ l.id }}" method="post" action="/bao-gia/{{ quote.id }}/gia-cong/{{ l.id }}/sua"></form>
+                <form id="del-fl-{{ l.id }}" method="post" action="/bao-gia/{{ quote.id }}/gia-cong/{{ l.id }}/xoa"></form>
+            </td></tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center text-muted py-3">Chưa có dòng gia công.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<form method="post" action="/bao-gia/{{ quote.id }}/gia-cong" class="row g-2" style="max-width: 1000px;">
+    <div class="col-md-3"><input class="form-control form-control-sm" name="ten_linh_kien" placeholder="Tên *" required></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" name="ma_ban_ve" placeholder="Mã bản vẽ"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" name="vat_lieu" placeholder="Vật liệu"></div>
+    <div class="col-md-1"><input class="form-control form-control-sm" type="number" step="0.01" name="so_luong" placeholder="SL" value="1"></div>
+    <div class="col-md-1"><input class="form-control form-control-sm" type="number" step="0.01" name="don_gia" placeholder="Đơn giá"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" name="nha_cung_cap" placeholder="NCC"></div>
+    <div class="col-md-1"><button class="btn btn-sm btn-primary w-100" type="submit">Thêm</button></div>
+</form>
+{% endif %}
+{% endblock %}

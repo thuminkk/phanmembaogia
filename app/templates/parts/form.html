@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{% if part %}Sửa linh kiện{% else %}Thêm linh kiện{% endif %} - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">{% if part %}Sửa linh kiện{% else %}Thêm linh kiện mới{% endif %}</h1>
+
+{% if error %}
+<div class="alert alert-danger" style="max-width: 720px;">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{% if part %}/linh-kien/{{ part.id }}/sua{% else %}/linh-kien/moi{% endif %}" class="bg-white p-4 rounded shadow-sm" style="max-width: 720px;">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Tên linh kiện (tiếng Anh theo hãng) *</label>
+            <input class="form-control" type="text" name="ten_linh_kien" required value="{{ part.ten_linh_kien if part else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Mã linh kiện</label>
+            <input class="form-control" type="text" name="ma_linh_kien" value="{{ (part.ma_linh_kien or '') if part else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Hãng (Maker)</label>
+            <input class="form-control" type="text" name="hang" value="{{ (part.hang or '') if part else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Loại</label>
+            <select class="form-select" name="loai">
+                <option value="">-- Chọn --</option>
+                {% for opt in loai_options %}
+                <option value="{{ opt }}" {% if part and part.loai == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Xuất xứ</label>
+            <input class="form-control" type="text" name="xuat_xu" value="{{ (part.xuat_xu or '') if part else '' }}">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Đơn vị</label>
+            <input class="form-control" type="text" name="don_vi" value="{{ (part.don_vi or '') if part else '' }}">
+        </div>
+        <div class="col-12">
+            <label class="form-label">Ghi chú</label>
+            <textarea class="form-control" name="ghi_chu" rows="2">{{ (part.ghi_chu or '') if part else '' }}</textarea>
+        </div>
+
+        {% if not part %}
+        <div class="col-12"><hr><div class="text-muted small mb-2">Có thể nhập luôn nhà cung cấp &amp; giá đầu tiên (không bắt buộc, có thể thêm sau ở trang chi tiết):</div></div>
+        <div class="col-md-6">
+            <label class="form-label">Nhà cung cấp</label>
+            <input class="form-control" type="text" name="nha_cung_cap">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Đơn giá (VND)</label>
+            <input class="form-control" type="number" step="0.01" name="don_gia">
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Lưu</button>
+        <a class="btn btn-outline-secondary" href="{% if part %}/linh-kien/{{ part.id }}{% else %}/linh-kien{% endif %}">Hủy</a>
+    </div>
+</form>
+{% endblock %}

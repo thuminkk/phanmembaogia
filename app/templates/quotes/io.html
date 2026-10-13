@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Tính toán IO - {{ quote.ma_bao_gia if quote else "" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not quote %}
+<p class="text-muted">Không tìm thấy báo giá.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
+<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_subnav.html" %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><strong>Dự án:</strong> {{ quote.project.ten_thiet_bi if quote.project else "—" }}</div>
+    <div class="col-md-3"><strong>Mã project:</strong> {{ quote.project.ma_du_an if quote.project else "—" }}</div>
+    <div class="col-md-3"><strong>Rev báo giá:</strong> {{ quote.ma_bao_gia }}</div>
+    <div class="col-md-3"><strong>Khách hàng:</strong> {{ (quote.project.khach_hang if quote.project else quote.khach_hang) or "—" }}</div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h5 mb-0">Bảng tính I/O</h2>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary save-all-io-btn">Lưu tất cả</button>
+        <form method="post" action="/bao-gia/{{ quote.id }}/io/nap-mau" onsubmit="return confirm('Nạp danh mục thiết bị chuẩn (Tủ HMI, Khí nén, Cảm biến...) + cấu hình PLC mẫu vào bảng bên dưới? Số lượng thiết bị I/O sẽ để trống để bạn tự điền theo dự án.');">
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Nạp danh mục mẫu</button>
+        </form>
+    </div>
+</div>
+<div class="table-responsive mb-2">
+    <table class="table table-sm bg-white align-middle">
+        <thead>
+            <tr>
+                <th>Tên thiết bị</th>
+                <th>Số lượng</th>
+                <th>Số input/1 thiết bị</th>
+                <th>Số output/1 thiết bị</th>
+                <th>Tổng số input</th>
+                <th>Tổng số output</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(current_group_id=None) %}
+            {% for l in quote.io_lines %}
+            {% if l.la_nhom %}
+            {% set ns.current_group_id = l.id %}
+            <tr class="table-light">
+                <td colspan="6"><input class="form-control form-control-sm fw-bold border-0 bg-transparent" form="io-{{ l.id }}" name="ten_thiet_bi" value="{{ l.ten_thiet_bi }}"></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" form="del-io-{{ l.id }}" type="submit" onclick="return confirm('Xóa nhóm này?');">Xóa</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td><input class="form-control form-control-sm" form="io-{{ l.id }}" name="ten_thiet_bi" value="{{ l.ten_thiet_bi }}"></td>
+                <td><input class="form-control form-control-sm" form="io-{{ l.id }}" type="number" step="1" name="so_luong" value="{{ "{:g}".format(l.so_luong) if l.so_luong is not none else '' }}" style="width:80px"></td>
+                <td><input class="form-control form-control-sm" form="io-{{ l.id }}" type="number" step="1" name="so_input" value="{{ "{:g}".format(l.so_input) if l.so_input is not none else '' }}" style="width:100px"></td>
+                <td><input class="form-control form-control-sm" form="io-{{ l.id }}" type="number" step="1" name="so_output" value="{{ "{:g}".format(l.so_output) if l.so_output is not none else '' }}" style="width:100px"></td>
+                <td>{{ "{:g}".format(l.tong_input) }}</td>
+                <td>{{ "{:g}".format(l.tong_output) }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" form="del-io-{{ l.id }}" type="submit" onclick="return confirm('Xóa dòng này?');">Xóa</button>
+                </td>
+            </tr>
+            {% endif %}
+            <tr class="d-none"><td colspan="7">
+                <form id="io-{{ l.id }}" method="post" action="/bao-gia/{{ quote.id }}/io/{{ l.id }}/sua"></form>
+                <form id="del-io-{{ l.id }}" method="post" action="/bao-gia/{{ quote.id }}/io/{{ l.id }}/xoa"></form>
+            </td></tr>
+            {% if ns.current_group_id and (not loop.nextitem or loop.nextitem.la_nhom) %}
+            <tr class="table-light">
+                <td colspan="7">
+                    <form method="post" action="/bao-gia/{{ quote.id }}/io/{{ ns.current_group_id }}/dong" class="d-flex gap-2 align-items-center flex-wrap">
+                        <input class="form-control form-control-sm" style="width:220px" name="ten_thiet_bi" placeholder="+ Thêm thiết bị vào nhóm này..." required>
+                        <input class="form-control form-control-sm" style="width:80px" type="number" step="1" name="so_luong" placeholder="SL">
+                        <input class="form-control form-control-sm" style="width:90px" type="number" step="1" name="so_input" placeholder="Input">
+                        <input class="form-control form-control-sm" style="width:90px" type="number" step="1" name="so_output" placeholder="Output">
+                        <button class="btn btn-sm btn-outline-primary" type="submit">+ Thêm vào nhóm</button>
+                    </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-3">Chưa có dòng nào.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="4">Tổng tính toán</td>
+                <td>{{ "{:g}".format(summary.tong_input) }}</td>
+                <td>{{ "{:g}".format(summary.tong_output) }}</td>
+                <td></td>
+            </tr>
+            <tr class="table-light">
+                <td colspan="3">Dự phòng (%)</td>
+                <td>
+                    <form method="post" action="/bao-gia/{{ quote.id }}/io/du-phong" id="du-phong-form" class="d-flex align-items-center gap-1">
+                        <input class="form-control form-control-sm" type="number" step="1" min="0" max="99" name="du_phong_io_percent" value="{{ "{:g}".format(quote.du_phong_io_percent) }}" style="width:70px" onchange="this.form.requestSubmit()">
+                        <span>%</span>
+                    </form>
+                </td>
+                <td>{{ "{:g}".format(summary.du_phong_input) }}</td>
+                <td>{{ "{:g}".format(summary.du_phong_output) }}</td>
+                <td></td>
+            </tr>
+            <tr class="table-light fw-bold">
+                <td colspan="4">Tổng tính toán (kèm dự phòng)</td>
+                <td>{{ "{:g}".format(summary.final_input) }}</td>
+                <td>{{ "{:g}".format(summary.final_output) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+<p class="text-muted small mb-2">Muốn thêm thiết bị vào 1 nhóm có sẵn (VD "Khí nén"), dùng ô "+ Thêm thiết bị vào nhóm này" ngay trong nhóm đó ở bảng trên. Form dưới đây dùng để thêm nhóm mới hoặc dòng rời ở cuối bảng.</p>
+<form method="post" action="/bao-gia/{{ quote.id }}/io/dong" class="row g-2 mb-4 align-items-end" style="max-width: 900px;">
+    <div class="col-md-4"><input class="form-control form-control-sm" name="ten_thiet_bi" placeholder="Tên thiết bị / tên nhóm" required></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="1" name="so_luong" placeholder="Số lượng"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="1" name="so_input" placeholder="Số input"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="1" name="so_output" placeholder="Số output"></div>
+    <div class="col-md-2 form-check">
+        <input class="form-check-input" type="checkbox" name="la_nhom" value="1" id="la-nhom-check">
+        <label class="form-check-label small" for="la-nhom-check">Là dòng tiêu đề nhóm (VD "Tủ HMI")</label>
+    </div>
+    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
+</form>
+
+<h2 class="h5 mb-3">Cấu hình PLC</h2>
+<div class="table-responsive mb-2">
+    <table class="table table-sm bg-white align-middle">
+        <thead>
+            <tr>
+                <th>Tên thiết bị</th>
+                <th>Số lượng</th>
+                <th>Số input</th>
+                <th>Số output</th>
+                <th>Tổng số input</th>
+                <th>Tổng số output</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in quote.plc_lines %}
+            <tr>
+                <td><input class="form-control form-control-sm" form="plc-{{ l.id }}" name="ten_thiet_bi" value="{{ l.ten_thiet_bi }}"></td>
+                <td><input class="form-control form-control-sm" form="plc-{{ l.id }}" type="number" step="1" name="so_luong" value="{{ "{:g}".format(l.so_luong) if l.so_luong is not none else '' }}" style="width:80px"></td>
+                <td><input class="form-control form-control-sm" form="plc-{{ l.id }}" type="number" step="1" name="so_input" value="{{ "{:g}".format(l.so_input) if l.so_input is not none else '' }}" style="width:100px"></td>
+                <td><input class="form-control form-control-sm" form="plc-{{ l.id }}" type="number" step="1" name="so_output" value="{{ "{:g}".format(l.so_output) if l.so_output is not none else '' }}" style="width:100px"></td>
+                <td>{{ "{:g}".format(l.tong_input) }}</td>
+                <td>{{ "{:g}".format(l.tong_output) }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" form="del-plc-{{ l.id }}" type="submit" onclick="return confirm('Xóa dòng này?');">Xóa</button>
+                </td>
+            </tr>
+            <tr class="d-none"><td colspan="7">
+                <form id="plc-{{ l.id }}" method="post" action="/bao-gia/{{ quote.id }}/io/plc/{{ l.id }}/sua"></form>
+                <form id="del-plc-{{ l.id }}" method="post" action="/bao-gia/{{ quote.id }}/io/plc/{{ l.id }}/xoa"></form>
+            </td></tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-3">Chưa có thiết bị PLC nào.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="table-light fw-bold">
+                <td colspan="4">Tổng</td>
+                <td>{{ "{:g}".format(summary.plc_tong_input) }}</td>
+                <td>{{ "{:g}".format(summary.plc_tong_output) }}</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+<form method="post" action="/bao-gia/{{ quote.id }}/io/plc" class="row g-2 mb-4" style="max-width: 700px;">
+    <div class="col-md-4"><input class="form-control form-control-sm" name="ten_thiet_bi" placeholder="Tên PLC/module" required></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="1" name="so_luong" placeholder="Số lượng"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="1" name="so_input" placeholder="Số input"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm" type="number" step="1" name="so_output" placeholder="Số output"></div>
+    <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" type="submit">Thêm dòng</button></div>
+</form>
+
+<div class="d-flex gap-2 mb-4">
+    <span class="badge {{ 'text-bg-success' if summary.du_input else 'text-bg-danger' }}">
+        Input: PLC {{ "{:g}".format(summary.plc_tong_input) }} / cần {{ "{:g}".format(summary.final_input) }}
+        {{ "— Đủ" if summary.du_input else "— Thiếu" }}
+    </span>
+    <span class="badge {{ 'text-bg-success' if summary.du_output else 'text-bg-danger' }}">
+        Output: PLC {{ "{:g}".format(summary.plc_tong_output) }} / cần {{ "{:g}".format(summary.final_output) }}
+        {{ "— Đủ" if summary.du_output else "— Thiếu" }}
+    </span>
+</div>
+
+<div class="mb-4">
+    <button type="button" class="btn btn-sm btn-outline-primary save-all-io-btn">Lưu tất cả</button>
+</div>
+
+<script src="{{ static_url('js/quote_io.js') }}"></script>
+{% endif %}
+{% endblock %}

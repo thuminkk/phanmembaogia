@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ part.ten_linh_kien if part else "Không tìm thấy" }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% if not part %}
+<p class="text-muted">Không tìm thấy linh kiện.</p>
+{% else %}
+<a class="btn btn-sm btn-outline-secondary mb-2" href="/linh-kien" onclick="history.back(); return false;">&larr; Quay lại</a>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ part.ten_linh_kien }}</h1>
+        <div class="text-muted">Mã: {{ part.ma_linh_kien or "—" }} · Hãng: {{ part.hang or "—" }} · Loại: {{ part.loai or "—" }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="/linh-kien/{{ part.id }}/sua">Sửa thông tin</a>
+        <form method="post" action="/linh-kien/{{ part.id }}/xoa" onsubmit="return confirm('Xóa hẳn linh kiện này khỏi CSDL? Không thể hoàn tác — nếu linh kiện đang dùng trong báo giá/cụm mẫu, các dòng đó cũng sẽ bị xóa theo.');">
+            <button class="btn btn-outline-danger" type="submit">Xóa</button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><strong>Xuất xứ:</strong> {{ part.xuat_xu or "—" }}</div>
+    <div class="col-md-3"><strong>Đơn vị:</strong> {{ part.don_vi or "—" }}</div>
+    <div class="col-12"><strong>Ghi chú:</strong> {{ part.ghi_chu or "—" }}</div>
+</div>
+
+<h2 class="h5 mb-3">Nhà cung cấp &amp; giá</h2>
+<p class="text-muted small">Mỗi linh kiện chỉ có 1 nhà cung cấp/giá duy nhất — sửa trực tiếp bên dưới.</p>
+{% if part.price %}
+{% set sp = part.price %}
+<div class="table-responsive mb-3" style="max-width: 900px;">
+    <table class="table bg-white align-middle">
+        <thead>
+            <tr>
+                <th>Nhà cung cấp</th>
+                <th>Đơn giá (VND)</th>
+                <th>Ngày cập nhật</th>
+                <th>Ghi chú</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><input class="form-control form-control-sm" form="edit-ncc-{{ sp.id }}" type="text" name="nha_cung_cap" value="{{ sp.nha_cung_cap }}" placeholder="(chưa rõ NCC)"></td>
+                <td><input class="form-control form-control-sm" form="edit-ncc-{{ sp.id }}" type="number" step="0.01" name="don_gia" value="{{ sp.don_gia }}" required></td>
+                <td>{{ sp.ngay_cap_nhat.strftime("%d/%m/%Y") }}</td>
+                <td><input class="form-control form-control-sm" form="edit-ncc-{{ sp.id }}" type="text" name="ghi_chu" value="{{ sp.ghi_chu or '' }}"></td>
+                <td class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary" form="edit-ncc-{{ sp.id }}" type="submit">Lưu</button>
+                    <button class="btn btn-sm btn-outline-danger" form="del-ncc-{{ sp.id }}" type="submit" onclick="return confirm('Xóa giá/NCC này? Linh kiện sẽ về trạng thái chưa có giá.');">Xóa</button>
+                </td>
+            </tr>
+            <tr class="d-none">
+                <td colspan="5">
+                    <form id="edit-ncc-{{ sp.id }}" method="post" action="/linh-kien/{{ part.id }}/ncc/{{ sp.id }}/sua"></form>
+                    <form id="del-ncc-{{ sp.id }}" method="post" action="/linh-kien/{{ part.id }}/ncc/{{ sp.id }}/xoa"></form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">Chưa có giá/nhà cung cấp nào.</p>
+<h3 class="h6">Thêm giá/nhà cung cấp</h3>
+<form method="post" action="/linh-kien/{{ part.id }}/ncc" class="row g-2 align-items-end" style="max-width: 720px;">
+    <div class="col-md-4">
+        <label class="form-label small">Nhà cung cấp</label>
+        <input class="form-control" type="text" name="nha_cung_cap" placeholder="(chưa rõ NCC)">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small">Đơn giá (VND)</label>
+        <input class="form-control" type="number" step="0.01" name="don_gia" required>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">Ghi chú</label>
+        <input class="form-control" type="text" name="ghi_chu">
+    </div>
+    <div class="col-md-1">
+        <button class="btn btn-primary w-100" type="submit">Thêm</button>
+    </div>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}
