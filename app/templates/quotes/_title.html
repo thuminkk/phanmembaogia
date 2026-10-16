@@ -1,0 +1,4 @@
+<h1 class="h3 {{ title_mb | default("mb-3") }}">
+    {{ quote.ma_bao_gia }}
+    {% if quote.project %}<a href="/du-an/{{ quote.project.id }}" class="fs-6 ms-2">({{ quote.project.ten_thiet_bi }})</a>{% endif %}
+</h1>

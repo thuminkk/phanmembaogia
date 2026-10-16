@@ -1,0 +1,5 @@
+<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>{% with title_mb = "mb-1" %}{% include "quotes/_title.html" %}{% endwith %}</div>
+    <a href="/bao-gia/{{ quote.id }}/luu-mau" class="btn btn-outline-secondary">Lưu làm mẫu</a>
+</div>

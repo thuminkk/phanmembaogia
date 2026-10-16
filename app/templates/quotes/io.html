@@ -4,8 +4,7 @@
 {% if not quote %}
 <p class="text-muted">Không tìm thấy báo giá.</p>
 {% else %}
-<a class="btn btn-sm btn-outline-secondary mb-2" href="{{ '/du-an/' ~ quote.project.id if quote.project else '/mau-bao-gia' }}">&larr; Quay lại {{ 'dự án' if quote.project else 'thư viện mẫu' }}</a>
-<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_header.html" %}
 {% include "quotes/_subnav.html" %}
 
 <div class="row g-3 mb-4">

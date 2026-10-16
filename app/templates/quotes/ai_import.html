@@ -4,7 +4,7 @@
 {% if not quote %}
 <p class="text-muted">Không tìm thấy báo giá.</p>
 {% else %}
-<h1 class="h3 mb-3">{{ quote.ma_bao_gia }}</h1>
+{% include "quotes/_title.html" %}
 {% include "quotes/_subnav.html" %}
 
 <h2 class="h5 mb-1">Nhập nhanh bằng AI (văn bản/ảnh)</h2>
