@@ -46,6 +46,7 @@ def quote_nvl_page(request: Request, quote_id: int, db: Session = Depends(get_db
 def quote_parts_page(request: Request, quote_id: int, db: Session = Depends(get_db)):
     context = _quote_context(db, quote_id, "linh_kien")
     context["standard_groups"] = standard_groups_crud.list_groups(db)
+    context["same_name_suggestions"] = crud.suggest_same_name_parts(db, context["quote"]) if context["quote"] else {}
     return templates.TemplateResponse(request, "quotes/parts.html", context)
 
 
@@ -434,6 +435,16 @@ def reorder_part_lines(quote_id: int, group_id: str = Form(""), line_ids: str = 
 def change_part_line_group(quote_id: int, line_id: int, group_id: str = Form(""), db: Session = Depends(get_db)):
     line = db.get(QuotePartLine, line_id)
     crud.update_part_line(db, line, group_id=int(group_id) if group_id else None)
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
+@router.post("/{quote_id:int}/linh-kien/{line_id:int}/dung-linh-kien")
+def use_same_name_part(quote_id: int, line_id: int, part_id: int = Form(...), db: Session = Depends(get_db)):
+    """Dòng 0đ -> chuyển sang linh kiện cùng tên đã có giá mà người dùng chọn trong gợi ý."""
+    line = db.get(QuotePartLine, line_id)
+    part = parts_crud.get_part(db, part_id)
+    if line and part and line.quote_id == quote_id:
+        crud.relink_part_line(db, line, part)
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
 

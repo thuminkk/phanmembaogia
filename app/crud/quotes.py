@@ -14,6 +14,7 @@ from app.db.models import (
     QuoteMaterialLine,
     QuotePartLine,
     QuotePLCLine,
+    StandardGroupLine,
 )
 from app.schemas.quotes import QuoteUpdateIn
 
@@ -508,4 +509,75 @@ def reorder_part_lines(db: Session, quote_id: int, group_id: int | None, line_id
             continue
         line.group_id = group_id
         line.thu_tu = index
+    db.commit()
+
+
+# ---- Gợi ý linh kiện cùng tên đã có giá (cho dòng 0đ) ----
+
+
+def _normalize_ten(ten: str | None) -> str:
+    # So khớp tên bằng Python (casefold) chứ không bằng lower() của SQLite — lower() của SQLite chỉ
+    # đổi chữ ASCII, không đổi chữ tiếng Việt có dấu (VD "Đ", "Ố").
+    return " ".join((ten or "").split()).casefold()
+
+
+def suggest_same_name_parts(db: Session, quote: Quote) -> dict[int, list[Part]]:
+    """Với mỗi dòng linh kiện 0đ: các linh kiện KHÁC trong CSDL đã có giá, có thể chính là nó.
+
+    - Dòng KHÔNG có mã: khớp theo tên. Nguyên nhân hay gặp: dòng được thêm khi chưa có mã ->
+      find_or_create_part_price() luôn tạo linh kiện mới 0đ, trong khi CSDL đã/sẽ có 1 linh kiện cùng
+      tên có mã + giá.
+    - Dòng CÓ mã: chỉ khớp đúng mã đó (VD cùng mã nhưng nhập khác/thiếu hãng). Không khớp theo tên —
+      tên chung chung như "Solenoid valve" khớp hàng chục mã khác nhau, toàn là linh kiện khác.
+    Chỉ GỢI Ý, không tự ghép — trùng tên chưa chắc là cùng 1 linh kiện (VD thùng carton khác kích
+    thước), người dùng tự chọn đúng cái."""
+    zero_lines = [l for l in quote.part_lines if not l.don_gia]
+    if not zero_lines:
+        return {}
+    priced = db.scalars(
+        select(Part)
+        .join(Part.suppliers)
+        .where(Part.is_active.is_(True), PartSupplierPrice.is_active.is_(True), PartSupplierPrice.don_gia > 0)
+    ).unique()
+    by_ten: dict[str, list[Part]] = {}
+    by_ma: dict[str, list[Part]] = {}
+    for part in priced:
+        by_ten.setdefault(_normalize_ten(part.ten_linh_kien), []).append(part)
+        if part.ma_linh_kien and part.ma_linh_kien.strip():
+            by_ma.setdefault(_normalize_ten(part.ma_linh_kien), []).append(part)
+    result = {}
+    for line in zero_lines:
+        ma = _normalize_ten(line.ma_linh_kien)
+        candidates = by_ma.get(ma, []) if ma else by_ten.get(_normalize_ten(line.ten_linh_kien), [])
+        matches = [p for p in candidates if p.id != line.part_id]
+        if matches:
+            result[line.id] = matches
+    return result
+
+
+def relink_part_line(db: Session, line: QuotePartLine, part: Part) -> None:
+    """Chuyển dòng báo giá sang dùng linh kiện `part` (lấy luôn giá/NCC hiện tại của nó).
+
+    Linh kiện cũ bị bỏ lại được xóa luôn NẾU nó chỉ là bản trùng rỗng: không mã, chưa có giá, và
+    không còn dòng báo giá/cụm mẫu nào khác dùng tới — để không còn sót bản 0đ gây nhầm lần sau."""
+    old_part = line.part
+    price = part.price
+    line.part_id = part.id
+    line.supplier_price_id = price.id if price else None
+    line.ma_linh_kien = part.ma_linh_kien
+    line.hang = part.hang
+    line.don_vi = part.don_vi
+    line.nha_cung_cap = price.nha_cung_cap if price else None
+    line.don_gia = price.don_gia if price else 0
+    db.flush()
+
+    if old_part is not None and old_part.id != part.id and not (old_part.ma_linh_kien or "").strip():
+        old_price = old_part.price
+        still_used = db.scalar(
+            select(func.count()).select_from(QuotePartLine).where(QuotePartLine.part_id == old_part.id)
+        ) or db.scalar(
+            select(func.count()).select_from(StandardGroupLine).where(StandardGroupLine.part_id == old_part.id)
+        )
+        if not still_used and (old_price is None or not old_price.don_gia):
+            db.delete(old_part)
     db.commit()
