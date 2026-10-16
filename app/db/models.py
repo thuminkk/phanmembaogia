@@ -299,6 +299,16 @@ class StandardGroup(Base):
         back_populates="standard_group", cascade="all, delete-orphan"
     )
 
+    @property
+    def tong_gia(self) -> float:
+        """Giá thành ước tính của cả cụm = tổng (SL × đơn giá CSDL hiện tại) — tính khi hiển thị, không lưu."""
+        return sum(line.thanh_tien for line in self.lines)
+
+    @property
+    def so_dong_chua_co_gia(self) -> int:
+        """Số dòng chưa có giá (0đ) — tổng cụm khi đó đang thấp hơn thực tế."""
+        return sum(1 for line in self.lines if not line.don_gia)
+
 
 class StandardGroupLine(Base):
     __tablename__ = "standard_group_lines"
@@ -313,6 +323,16 @@ class StandardGroupLine(Base):
     standard_group: Mapped["StandardGroup"] = relationship(back_populates="lines")
     part: Mapped["Part"] = relationship()
     supplier_price: Mapped["PartSupplierPrice"] = relationship()
+
+    @property
+    def don_gia(self) -> float:
+        """Đơn giá LIVE từ CSDL — cùng nguồn giá mà apply_group_to_quote() dùng khi áp cụm vào báo giá."""
+        price = self.supplier_price if self.supplier_price and self.supplier_price.is_active else self.part.price
+        return price.don_gia if price else 0
+
+    @property
+    def thanh_tien(self) -> float:
+        return self.so_luong * self.don_gia
 
 
 class AISettings(Base):

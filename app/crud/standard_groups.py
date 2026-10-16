@@ -126,18 +126,21 @@ def apply_group_to_quote(db: Session, quote_id: int, standard_group_id: int) -> 
     new_group = quotes_crud.add_group(db, quote_id, standard_group.ten_cum)
 
     for line in standard_group.lines:
+        # supplier_price_id của dòng cụm có thể trỏ tới dòng giá đã bị xóa (dữ liệu cũ trước khi đổi sang
+        # 1 giá/linh kiện) -> lấy giá hiện tại của linh kiện, giống StandardGroupLine.don_gia.
+        price = line.supplier_price if line.supplier_price and line.supplier_price.is_active else line.part.price
         quotes_crud.add_part_line(
             db,
             quote_id,
             group_id=new_group.id,
             part_id=line.part_id,
-            supplier_price_id=line.supplier_price_id,
+            supplier_price_id=price.id if price else None,
             ten_linh_kien=line.part.ten_linh_kien,
             ma_linh_kien=line.part.ma_linh_kien,
             hang=line.part.hang,
-            nha_cung_cap=line.supplier_price.nha_cung_cap,
+            nha_cung_cap=price.nha_cung_cap if price else None,
             don_vi=line.part.don_vi,
-            don_gia=line.supplier_price.don_gia,
+            don_gia=price.don_gia if price else 0,
             so_luong=line.so_luong,
             ghi_chu=line.ghi_chu,
         )
