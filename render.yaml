@@ -4,7 +4,7 @@ services:
     name: phan-mem-bao-gia
     runtime: python
     region: singapore
-    plan: starter
+    plan: free # 1 người dùng: web tự ngủ sau 15 phút không dùng, mở lại đợi ~1 phút. Cần chạy liên tục thì đổi "starter".
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
     healthCheckPath: /healthz
