@@ -8,3 +8,6 @@ anthropic==0.40.0
 openai==1.58.1
 google-generativeai==0.8.3
 pymupdf==1.28.2
+psycopg[binary]==3.2.9
+itsdangerous==2.2.0
+python-dotenv==1.2.4

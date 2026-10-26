@@ -344,3 +344,18 @@ class AISettings(Base):
     openai_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     gemini_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     deepseek_api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
+class User(Base):
+    """Tài khoản đăng nhập. is_admin: được quản lý tài khoản và trang Cài đặt (API key AI);
+    mọi tài khoản đều xem/sửa được dữ liệu linh kiện, dự án, báo giá như nhau."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    ho_ten: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)

@@ -16,7 +16,20 @@
             <a href="/du-an" class="nav-link {% if active_page == 'projects' %}active{% endif %}">Dự án</a>
             <a href="/mau-bao-gia" class="nav-link {% if active_page == 'quote_templates' %}active{% endif %}">Mẫu báo giá</a>
             <a href="/cum-tieu-chuan" class="nav-link {% if active_page == 'standard_groups' %}active{% endif %}">Cụm mẫu</a>
+            {% if request.state.user and request.state.user.is_admin %}
             <a href="/cai-dat" class="nav-link {% if active_page == 'settings' %}active{% endif %}">Cài đặt</a>
+            <a href="/quan-tri/tai-khoan" class="nav-link {% if active_page == 'users' %}active{% endif %}">Tài khoản</a>
+            {% endif %}
+            {% if request.state.user %}
+            <div class="mt-auto pt-3 border-top border-secondary small">
+                <div class="text-white-50 mb-1">Đang đăng nhập:</div>
+                <div class="text-white fw-semibold mb-2">{{ request.state.user.ho_ten or request.state.user.username }}</div>
+                <a href="/doi-mat-khau" class="nav-link px-0 py-1">Đổi mật khẩu</a>
+                <form method="post" action="/dang-xuat">
+                    <button class="btn btn-sm btn-outline-light mt-1 w-100" type="submit">Đăng xuất</button>
+                </form>
+            </div>
+            {% endif %}
         </nav>
         <main class="content flex-grow-1 p-4">
             {% block content %}{% endblock %}

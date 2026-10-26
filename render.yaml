@@ -1,0 +1,26 @@
+# Cấu hình Render (Blueprint): Render Dashboard -> New -> Blueprint -> chọn repo GitHub này.
+services:
+  - type: web
+    name: phan-mem-bao-gia
+    runtime: python
+    region: singapore
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.6
+      - key: DATABASE_URL
+        sync: false # nhập tay trên Render: link kết nối Neon
+      - key: ADMIN_PASSWORD
+        sync: false # nhập tay: mật khẩu tài khoản quản trị đầu tiên
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SESSION_HTTPS_ONLY
+        value: "true"
+      - key: DATA_DIR
+        value: /tmp/bao-gia

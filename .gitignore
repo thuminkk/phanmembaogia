@@ -2,3 +2,10 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Bí mật (link CSDL Neon, SECRET_KEY, mật khẩu) — KHÔNG BAO GIỜ đưa lên GitHub
+.env
+
+# Dữ liệu cục bộ nếu lỡ đặt trong thư mục mã nguồn
+*.db
+*.db.backup*
