@@ -38,7 +38,7 @@
     {% endif %}
 </div>
 
-<div class="mb-3 d-flex align-items-center gap-2">
+<div class="mb-3 d-flex align-items-center gap-2 py-2 bg-body-tertiary" style="position: sticky; top: 0; z-index: 20;">
     <div class="form-check">
         <input class="form-check-input" type="checkbox" id="select-all">
         <label class="form-check-label small" for="select-all">Chọn tất cả</label>
@@ -46,6 +46,18 @@
     <button type="submit" form="bulk-delete-form" id="bulk-delete-btn" class="btn btn-outline-danger btn-sm" disabled onclick="return confirm('Xóa các dòng linh kiện đã chọn?');">
         Xóa đã chọn (<span id="selected-count">0</span>)
     </button>
+    <div class="d-flex align-items-center gap-1 ms-2">
+        <select class="form-select form-select-sm" form="bulk-delete-form" name="move_group_id" id="bulk-move-group" style="width:200px">
+            <option value="">-- Chọn cụm đích --</option>
+            {% for g in quote.groups %}
+            <option value="{{ g.id }}">{{ g.ten_cum }}</option>
+            {% endfor %}
+            <option value="0">(Bỏ khỏi cụm — Chưa phân cụm)</option>
+        </select>
+        <button type="submit" form="bulk-delete-form" formaction="/bao-gia/{{ quote.id }}/linh-kien/chuyen-cum" id="bulk-move-btn" class="btn btn-outline-primary btn-sm text-nowrap" disabled>
+            Chuyển đã chọn vào cụm
+        </button>
+    </div>
     <form id="bulk-delete-form" method="post" action="/bao-gia/{{ quote.id }}/linh-kien/xoa-nhieu"></form>
 </div>
 

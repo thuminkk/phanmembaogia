@@ -45,6 +45,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const checked = document.querySelectorAll(".row-checkbox:checked").length;
         if (countLabel) countLabel.textContent = checked;
         if (deleteBtn) deleteBtn.disabled = checked === 0;
+        const moveBtn = document.getElementById("bulk-move-btn");
+        const moveGroup = document.getElementById("bulk-move-group");
+        if (moveBtn) moveBtn.disabled = checked === 0 || !moveGroup.value;
         if (selectAll) selectAll.checked = checked > 0 && checked === rowCheckboxes.length;
     }
 
@@ -55,5 +58,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
     rowCheckboxes.forEach((cb) => cb.addEventListener("change", updateState));
+    document.getElementById("bulk-move-group")?.addEventListener("change", updateState);
     updateState();
 });

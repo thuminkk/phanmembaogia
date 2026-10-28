@@ -424,6 +424,17 @@ async def delete_part_lines(quote_id: int, request: Request, db: Session = Depen
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
 
+@router.post("/{quote_id:int}/linh-kien/chuyen-cum")
+async def move_part_lines(quote_id: int, request: Request, db: Session = Depends(get_db)):
+    """Chuyển các dòng đã tích chọn vào 1 cụm — dùng chung ô tích với "Xóa đã chọn"."""
+    form = await request.form()
+    ids = [int(v) for v in form.getlist("ids")]
+    group_id = form.get("move_group_id") or ""
+    if group_id:  # "" = chưa chọn cụm đích -> không làm gì; "0" = bỏ khỏi cụm
+        crud.move_part_lines(db, quote_id, ids, int(group_id) or None)
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
 @router.post("/{quote_id:int}/linh-kien/sap-xep")
 def reorder_part_lines(quote_id: int, group_id: str = Form(""), line_ids: str = Form(""), db: Session = Depends(get_db)):
     ids = [int(x) for x in line_ids.split(",") if x]

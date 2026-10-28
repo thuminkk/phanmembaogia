@@ -501,6 +501,25 @@ def delete_part_lines(db: Session, quote_id: int, line_ids: list[int]) -> None:
     db.commit()
 
 
+def move_part_lines(db: Session, quote_id: int, line_ids: list[int], group_id: int | None) -> int:
+    """Chuyển nhiều dòng vào 1 cụm (None = chưa phân cụm): xếp nối vào cuối cụm đích, giữ thứ tự line_ids."""
+    if group_id is not None:
+        group = db.get(QuoteComponentGroup, group_id)
+        if group is None or group.quote_id != quote_id:
+            return 0
+    lines = [l for l in (db.get(QuotePartLine, i) for i in line_ids) if l is not None and l.quote_id == quote_id]
+    moving = {l.id for l in lines}
+    con_lai = db.scalars(select(QuotePartLine.thu_tu).where(
+        QuotePartLine.quote_id == quote_id, QuotePartLine.group_id == group_id, QuotePartLine.id.not_in(moving)
+    )).all()
+    next_thu_tu = max(con_lai, default=-1) + 1
+    for index, line in enumerate(lines):
+        line.group_id = group_id
+        line.thu_tu = next_thu_tu + index
+    db.commit()
+    return len(lines)
+
+
 def reorder_part_lines(db: Session, quote_id: int, group_id: int | None, line_ids: list[int]) -> None:
     """Kéo-thả: cập nhật group_id (nếu đổi bảng) + thu_tu theo đúng thứ tự line_ids cho bảng đích."""
     for index, line_id in enumerate(line_ids):
