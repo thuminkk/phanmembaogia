@@ -555,14 +555,17 @@ def suggest_same_name_parts(db: Session, quote: Quote) -> dict[int, list[Part]]:
     return result
 
 
-def relink_part_line(db: Session, line: QuotePartLine, part: Part) -> None:
-    """Chuyển dòng báo giá sang dùng linh kiện `part` (lấy luôn giá/NCC hiện tại của nó).
+def relink_part_line(db: Session, line: QuotePartLine, part: Part, xoa_ban_trung_rong: bool = True) -> None:
+    """Chuyển dòng báo giá sang dùng linh kiện `part` (lấy luôn tên/mã/hãng/giá/NCC hiện tại của nó);
+    giữ nguyên số lượng, cụm, vị trí và ghi chú của dòng.
 
-    Linh kiện cũ bị bỏ lại được xóa luôn NẾU nó chỉ là bản trùng rỗng: không mã, chưa có giá, và
-    không còn dòng báo giá/cụm mẫu nào khác dùng tới — để không còn sót bản 0đ gây nhầm lần sau."""
+    xoa_ban_trung_rong=True (dùng cho gợi ý dòng 0đ): linh kiện cũ bị bỏ lại được xóa luôn NẾU nó chỉ
+    là bản trùng rỗng: không mã, chưa có giá, và không còn dòng báo giá/cụm mẫu nào khác dùng tới — để
+    không còn sót bản 0đ gây nhầm lần sau. Thay linh kiện chủ động thì KHÔNG xóa gì trong CSDL."""
     old_part = line.part
     price = part.price
     line.part_id = part.id
+    line.ten_linh_kien = part.ten_linh_kien
     line.supplier_price_id = price.id if price else None
     line.ma_linh_kien = part.ma_linh_kien
     line.hang = part.hang
@@ -571,7 +574,12 @@ def relink_part_line(db: Session, line: QuotePartLine, part: Part) -> None:
     line.don_gia = price.don_gia if price else 0
     db.flush()
 
-    if old_part is not None and old_part.id != part.id and not (old_part.ma_linh_kien or "").strip():
+    if (
+        xoa_ban_trung_rong
+        and old_part is not None
+        and old_part.id != part.id
+        and not (old_part.ma_linh_kien or "").strip()
+    ):
         old_price = old_part.price
         still_used = db.scalar(
             select(func.count()).select_from(QuotePartLine).where(QuotePartLine.part_id == old_part.id)
@@ -581,3 +589,16 @@ def relink_part_line(db: Session, line: QuotePartLine, part: Part) -> None:
         if not still_used and (old_price is None or not old_price.don_gia):
             db.delete(old_part)
     db.commit()
+
+
+def replace_part_line(db: Session, line: QuotePartLine, part: Part, ca_bao_gia: bool = False) -> int:
+    """Thay linh kiện của 1 dòng báo giá bằng linh kiện khác trong CSDL. ca_bao_gia=True: thay luôn
+    mọi dòng khác trong CÙNG báo giá đang dùng đúng linh kiện cũ (VD cùng 1 van dùng ở nhiều cụm).
+    Trả về số dòng đã thay."""
+    if ca_bao_gia and line.part_id is not None:
+        lines = [l for l in line.quote.part_lines if l.part_id == line.part_id]
+    else:
+        lines = [line]
+    for l in lines:
+        relink_part_line(db, l, part, xoa_ban_trung_rong=False)
+    return len(lines)

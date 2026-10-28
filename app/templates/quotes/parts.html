@@ -101,6 +101,12 @@
     </td>
     <td class="d-flex gap-1">
         <button class="btn btn-sm btn-outline-primary" form="pl-{{ l.id }}" type="submit">Lưu</button>
+        <button class="btn btn-sm btn-outline-secondary text-nowrap replace-part-btn" type="button" title="Thay bằng linh kiện khác trong CSDL"
+            data-action="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/thay-the"
+            data-part-id="{{ l.part_id or '' }}"
+            data-ten="{{ l.ten_linh_kien }}" data-ma="{{ l.ma_linh_kien or '' }}" data-hang="{{ l.hang or '' }}"
+            data-gia="{{ l.don_gia }}" data-so-luong="{{ '{:g}'.format(l.so_luong) }}"
+            data-cung-linh-kien="{{ (quote.part_lines | selectattr('part_id', 'equalto', l.part_id) | list | length) if l.part_id else 1 }}">⇄ Thay</button>
         <button class="btn btn-sm btn-outline-danger" form="del-pl-{{ l.id }}" type="submit" onclick="return confirm('Xóa dòng này?');">Xóa</button>
     </td>
 </tr>
@@ -209,6 +215,33 @@
         <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
     </form>
 </div>
+
+<div class="modal fade" id="replace-part-modal" tabindex="-1" aria-labelledby="replace-part-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="replace-part-title">Thay linh kiện</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body">
+                <div class="small text-muted mb-1">Đang dùng:</div>
+                <div class="bg-light rounded p-2 mb-3 small" id="rp-current"></div>
+                <label class="form-label small fw-bold" for="rp-search">Tìm linh kiện thay thế trong CSDL (tên hoặc mã)</label>
+                <input class="form-control mb-2" type="text" id="rp-search" autocomplete="off">
+                <div class="form-check mb-2" id="rp-all-wrap">
+                    <input class="form-check-input" type="checkbox" id="rp-all">
+                    <label class="form-check-label small" for="rp-all" id="rp-all-label"></label>
+                </div>
+                <div class="list-group" id="rp-results"></div>
+                <div class="text-muted small mt-2">Dòng giữ nguyên số lượng, cụm, vị trí và ghi chú; tên/mã/hãng/NCC/giá lấy theo linh kiện mới chọn. Linh kiện chưa có trong CSDL thì thêm ở trang Linh kiện trước.</div>
+            </div>
+        </div>
+    </div>
+</div>
+<form id="rp-form" method="post" class="d-none">
+    <input type="hidden" name="part_id">
+    <input type="hidden" name="ca_bao_gia">
+</form>
 
 <script src="{{ static_url('js/parts.js') }}"></script>
 <script src="{{ static_url('js/quotes.js') }}"></script>

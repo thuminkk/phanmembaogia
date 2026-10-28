@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initCollapseAllGroups();
     initSaveAllLines();
     initGroupSelectAll();
+    initReplacePart();
 
     const searchBox = document.getElementById("part-search");
     if (!searchBox) return;
@@ -270,4 +271,102 @@ function initDragDropReorder() {
             }).then(() => location.reload());
         });
     });
+}
+
+function initReplacePart() {
+    // Nút "⇄ Thay" trên từng dòng linh kiện báo giá -> hộp tìm linh kiện khác trong CSDL -> chọn 1 kết
+    // quả là nộp form thay luôn (server giữ SL/cụm/vị trí/ghi chú, lấy tên/mã/giá theo linh kiện mới).
+    const modalEl = document.getElementById("replace-part-modal");
+    if (!modalEl) return;
+    const modal = new bootstrap.Modal(modalEl);
+    const searchBox = document.getElementById("rp-search");
+    const resultsBox = document.getElementById("rp-results");
+    const currentBox = document.getElementById("rp-current");
+    const allWrap = document.getElementById("rp-all-wrap");
+    const allBox = document.getElementById("rp-all");
+    const allLabel = document.getElementById("rp-all-label");
+    const form = document.getElementById("rp-form");
+    const fmt = (n) => Number(n || 0).toLocaleString("vi-VN");
+    let current = null;
+    let debounceTimer;
+
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    }
+
+    document.querySelectorAll(".replace-part-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            current = btn.dataset;
+            currentBox.textContent =
+                (current.ma || "(không mã)") + " — " + current.ten + " — " + (current.hang || "?") +
+                " — " + fmt(current.gia) + "đ × " + current.soLuong;
+            const n = parseInt(current.cungLinhKien, 10) || 1;
+            allWrap.hidden = n <= 1;
+            allBox.checked = false;
+            allLabel.textContent = "Thay luôn cả " + n + " dòng đang dùng linh kiện này trong báo giá";
+            searchBox.value = current.ten;
+            resultsBox.innerHTML = "";
+            modal.show();
+            search();
+        });
+    });
+
+    modalEl.addEventListener("shown.bs.modal", () => {
+        searchBox.focus();
+        searchBox.select();
+    });
+
+    searchBox.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(search, 300);
+    });
+
+    function search() {
+        const q = searchBox.value.trim();
+        if (!q) {
+            resultsBox.innerHTML = "";
+            return;
+        }
+        fetch("/linh-kien/tim-kiem?q=" + encodeURIComponent(q))
+            .then((r) => r.json())
+            .then(render);
+    }
+
+    function render(parts) {
+        resultsBox.innerHTML = "";
+        if (!parts.length) {
+            resultsBox.appendChild(el("div", "list-group-item text-muted small", "Không tìm thấy trong CSDL"));
+            return;
+        }
+        const giaCu = Number(current.gia || 0);
+        parts.forEach((p) => {
+            const sp = p.suppliers[0] || { nha_cung_cap: "(chưa rõ NCC)", don_gia: 0 };
+            const isCurrent = String(p.part_id) === current.partId;
+            const item = el("button", "list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-3 small");
+            item.type = "button";
+            item.disabled = isCurrent;
+
+            const left = el("div");
+            left.appendChild(el("div", "fw-semibold", (p.ma_linh_kien || "(không mã)") + (isCurrent ? "  (đang dùng)" : "")));
+            left.appendChild(el("div", "text-muted", p.ten_linh_kien + " · " + (p.hang || "—") + " · " + sp.nha_cung_cap));
+
+            const right = el("div", "text-end text-nowrap");
+            right.appendChild(el("div", "fw-bold", fmt(sp.don_gia) + "đ"));
+            const diff = Number(sp.don_gia || 0) - giaCu;
+            if (!isCurrent && diff !== 0) {
+                right.appendChild(el("div", diff > 0 ? "text-danger" : "text-success", (diff > 0 ? "+" : "−") + fmt(Math.abs(diff)) + "đ"));
+            }
+            item.append(left, right);
+            item.addEventListener("click", () => {
+                form.action = current.action;
+                form.elements.part_id.value = p.part_id;
+                form.elements.ca_bao_gia.value = allBox.checked ? "1" : "";
+                form.submit();
+            });
+            resultsBox.appendChild(item);
+        });
+    }
 }

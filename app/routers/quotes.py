@@ -438,6 +438,22 @@ def change_part_line_group(quote_id: int, line_id: int, group_id: str = Form("")
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
 
+@router.post("/{quote_id:int}/linh-kien/{line_id:int}/thay-the")
+def replace_part_line(
+    quote_id: int,
+    line_id: int,
+    part_id: int = Form(...),
+    ca_bao_gia: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Thay linh kiện của dòng (giữ SL/cụm/vị trí/ghi chú) — chọn từ ô tìm kiếm trong hộp "Thay linh kiện"."""
+    line = db.get(QuotePartLine, line_id)
+    part = parts_crud.get_part(db, part_id)
+    if line and part and part.is_active and line.quote_id == quote_id:
+        crud.replace_part_line(db, line, part, ca_bao_gia=bool(ca_bao_gia))
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
 @router.post("/{quote_id:int}/linh-kien/{line_id:int}/dung-linh-kien")
 def use_same_name_part(quote_id: int, line_id: int, part_id: int = Form(...), db: Session = Depends(get_db)):
     """Dòng 0đ -> chuyển sang linh kiện cùng tên đã có giá mà người dùng chọn trong gợi ý."""
