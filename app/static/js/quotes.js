@@ -404,9 +404,46 @@ function initPartPicker() {
         countBox.textContent = selected.size;
         totalBox.textContent = fmt(total);
         submitBtn.disabled = selected.size === 0;
+        if (selected.size === 0) document.getElementById("pp-confirm").hidden = true;
+        const confirmCount = document.getElementById("pp-confirm-count");
+        if (confirmCount) confirmCount.textContent = selected.size;
         submitBtn.textContent = selected.size ? "Thêm " + selected.size + " linh kiện vào báo giá" : "Thêm vào báo giá";
         checkAll.checked = shown.length > 0 && shown.every((p) => selected.has(p.part_id));
     }
+
+    // Bước 2 — xác nhận cụm: bấm "Thêm" mở hàng nút cụm, bấm 1 cụm là nộp luôn. Cụm dùng lần trước
+    // (nhớ theo từng báo giá) được tô đậm và focus sẵn -> chỉ cần Enter.
+    const confirmBox = document.getElementById("pp-confirm");
+    const newGroupBox = document.getElementById("pp-new-group");
+    const newGroupBtn = document.getElementById("pp-new-group-btn");
+    const groupBtns = confirmBox.querySelectorAll(".pp-group-btn");
+    const lastGroupKey = "pp-last-group:" + location.pathname;
+    let lastGroup = null;
+    try { lastGroup = localStorage.getItem(lastGroupKey); } catch (e) { /* bỏ qua */ }
+
+    submitBtn.addEventListener("click", () => {
+        document.getElementById("pp-confirm-count").textContent = selected.size;
+        confirmBox.hidden = false;
+        let focusBtn = groupBtns[0];
+        groupBtns.forEach((btn) => {
+            const isLast = lastGroup !== null && btn.value === lastGroup;
+            btn.classList.toggle("btn-primary", isLast);
+            btn.classList.toggle("btn-outline-primary", !isLast && btn.value !== "");
+            if (isLast) focusBtn = btn;
+        });
+        focusBtn.focus();
+    });
+    document.getElementById("pp-back").addEventListener("click", () => { confirmBox.hidden = true; });
+    groupBtns.forEach((btn) => btn.addEventListener("click", () => {
+        newGroupBox.value = ""; // bấm cụm có sẵn thì bỏ tên cụm mới đang gõ dở
+        try { localStorage.setItem(lastGroupKey, btn.value); } catch (e) { /* bỏ qua */ }
+    }));
+    newGroupBox.addEventListener("input", () => { newGroupBtn.disabled = !newGroupBox.value.trim(); });
+    newGroupBox.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault(); // Enter mặc định sẽ "bấm" nút cụm đầu tiên
+        if (newGroupBox.value.trim()) newGroupBtn.click();
+    });
 
     checkAll.addEventListener("change", () => {
         shown.forEach((p) => {

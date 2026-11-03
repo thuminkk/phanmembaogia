@@ -298,14 +298,26 @@
             <div class="modal-footer justify-content-between">
                 <div class="small"><span class="fw-semibold" id="pp-selected-count">0</span> linh kiện đã chọn · tạm tính <span class="fw-semibold" id="pp-selected-total">0</span>đ
                     <button type="button" class="btn btn-link btn-sm p-0 ms-2" id="pp-clear">Bỏ chọn hết</button></div>
-                <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/them-nhieu" id="pp-form" class="d-flex gap-2 align-items-center">
-                    <label class="small text-nowrap" for="pp-group">Thêm vào cụm</label>
-                    <select class="form-select form-select-sm" name="group_id" id="pp-group" style="width:220px">
-                        <option value="">-- Chưa phân cụm --</option>
-                        {% for g in quote.groups %}<option value="{{ g.id }}">{{ g.ten_cum }}</option>{% endfor %}
-                    </select>
+                <button class="btn btn-primary btn-sm text-nowrap" type="button" id="pp-submit" disabled>Thêm vào báo giá</button>
+            </div>
+            <!-- Bước 2: xác nhận cụm — bấm 1 nút cụm là thêm luôn (không cần chọn rồi bấm lại). -->
+            <div class="modal-footer d-block bg-light" id="pp-confirm" hidden>
+                <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/them-nhieu" id="pp-form">
                     <div id="pp-hidden"></div>
-                    <button class="btn btn-primary btn-sm text-nowrap" type="submit" id="pp-submit" disabled>Thêm vào báo giá</button>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="fw-semibold">Thêm <span id="pp-confirm-count">0</span> linh kiện vào cụm nào?</div>
+                        <button type="button" class="btn btn-link btn-sm" id="pp-back">← Quay lại chọn tiếp</button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        {% for g in quote.groups %}
+                        <button type="submit" class="btn btn-outline-primary btn-sm pp-group-btn" name="group_id" value="{{ g.id }}">{{ g.ten_cum }}</button>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-outline-secondary btn-sm pp-group-btn" name="group_id" value="">Chưa phân cụm</button>
+                    </div>
+                    <div class="d-flex gap-2" style="max-width: 520px;">
+                        <input class="form-control form-control-sm" name="ten_cum_moi" id="pp-new-group" placeholder="…hoặc gõ tên cụm mới rồi Enter">
+                        <button type="submit" class="btn btn-sm btn-primary text-nowrap" id="pp-new-group-btn" disabled>Tạo cụm & thêm</button>
+                    </div>
                 </form>
             </div>
         </div>

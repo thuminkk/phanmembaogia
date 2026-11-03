@@ -439,6 +439,9 @@ async def add_part_lines_from_catalog(quote_id: int, request: Request, db: Sessi
         except ValueError:
             continue
     group_id = form.get("group_id") or ""
+    ten_cum_moi = (form.get("ten_cum_moi") or "").strip()
+    if ten_cum_moi:  # bước xác nhận cho phép tạo luôn cụm mới để thêm vào
+        group_id = str(crud.add_group(db, quote_id, ten_cum_moi).id)
     crud.add_part_lines_from_catalog(db, quote_id, items, int(group_id) if group_id else None)
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
