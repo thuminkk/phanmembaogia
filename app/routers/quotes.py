@@ -363,6 +363,7 @@ def add_part_line(
     don_gia: float = Form(0),
     so_luong: float = Form(1),
     ghi_chu: str = Form(""),
+    cap_nhat_gia: str = Form(""),
     db: Session = Depends(get_db),
 ):
     crud.add_part_line(
@@ -379,6 +380,7 @@ def add_part_line(
         don_gia=don_gia,
         so_luong=so_luong,
         ghi_chu=ghi_chu or None,
+        cap_nhat_gia=bool(cap_nhat_gia),
     )
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 

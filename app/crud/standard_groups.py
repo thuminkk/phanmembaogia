@@ -75,6 +75,7 @@ def add_line(
     so_luong: float,
     ghi_chu: str | None,
     loai: str | None = None,
+    cap_nhat_gia: bool = True,
 ) -> StandardGroupLine:
     if part_id and supplier_price_id:
         part = db.get(Part, part_id)
@@ -89,6 +90,7 @@ def add_line(
             don_gia=don_gia,
             don_vi=don_vi,
             loai=loai,
+            cap_nhat_gia=cap_nhat_gia,
         )
     line = StandardGroupLine(
         standard_group_id=standard_group_id,

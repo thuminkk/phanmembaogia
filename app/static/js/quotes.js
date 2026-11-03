@@ -19,9 +19,32 @@ document.addEventListener("DOMContentLoaded", function () {
         hiddenSupplierPriceId.value = "";
     }
 
+    // Ô "Cập nhật giá/NCC mới vào CSDL": mặc định KHÔNG tích (giữ giá cũ). Khi đã chọn 1 linh kiện
+    // từ kết quả tìm kiếm rồi sửa giá/NCC khác CSDL -> tô vàng + ghi rõ giá cũ -> mới để người dùng quyết.
+    const priceBox = document.getElementById("price-change-box");
+    const priceInfo = document.getElementById("price-change-info");
+    const priceCheck = document.getElementById("cap_nhat_gia");
+    const defaultInfo = priceInfo ? priceInfo.textContent : "";
+    let original = null; // {don_gia, nha_cung_cap} của linh kiện vừa chọn
+
+    function refreshPriceBox() {
+        if (!priceBox) return;
+        const gia = Number(document.getElementById("don_gia").value || 0);
+        const ncc = document.getElementById("nha_cung_cap").value.trim();
+        const changed = original && (gia !== original.don_gia || ncc !== original.nha_cung_cap);
+        priceBox.classList.toggle("alert-warning", !!changed);
+        priceInfo.textContent = changed
+            ? "— CSDL: " + original.don_gia.toLocaleString("vi-VN") + "đ · " + (original.nha_cung_cap || "chưa rõ NCC") +
+              " → nhập: " + gia.toLocaleString("vi-VN") + "đ · " + (ncc || "chưa rõ NCC") + ". Không tích: dòng dùng giá cũ."
+            : defaultInfo;
+    }
+
     fieldIds.forEach((id) => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener("input", clearLink);
+        if (!el) return;
+        el.addEventListener("input", clearLink);
+        if (id === "ma_linh_kien" || id === "hang") el.addEventListener("input", () => { original = null; });
+        el.addEventListener("input", refreshPriceBox);
     });
 
     let debounceTimer;
@@ -64,6 +87,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById("don_gia").value = sp.don_gia || 0;
                     hiddenPartId.value = p.part_id;
                     hiddenSupplierPriceId.value = sp.supplier_price_id || "";
+                    original = sp.supplier_price_id ? { don_gia: Number(sp.don_gia || 0), nha_cung_cap: (sp.nha_cung_cap || "").trim() } : null;
+                    if (priceCheck) priceCheck.checked = false;
+                    refreshPriceBox();
                     resultsBox.innerHTML = "";
                     searchBox.value = "";
                 });

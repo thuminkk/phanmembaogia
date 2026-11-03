@@ -83,6 +83,13 @@
         <div class="col-md-1"><input class="form-control form-control-sm" id="don_vi" name="don_vi" placeholder="Đ.vị"></div>
         <div class="col-md-1"><input class="form-control form-control-sm" type="number" step="1" name="so_luong" placeholder="SL" value="1"></div>
         <div class="col-md-1"><input class="form-control form-control-sm" id="don_gia" type="number" step="0.01" name="don_gia" placeholder="Giá"></div>
+        <div class="col-12">
+            <div class="form-check small d-inline-block rounded px-2 py-1" id="price-change-box">
+                <input class="form-check-input ms-0 me-1" type="checkbox" name="cap_nhat_gia" value="1" id="cap_nhat_gia">
+                <label class="form-check-label" for="cap_nhat_gia">Cập nhật giá/NCC mới vào CSDL linh kiện</label>
+                <span class="text-muted" id="price-change-info">— không tích: linh kiện đã có giá trong CSDL sẽ giữ nguyên giá cũ (dòng này dùng giá cũ).</span>
+            </div>
+        </div>
         <div class="col-12 text-muted small">Chọn 1 kết quả tìm kiếm ở trên để tự điền (kèm đúng NCC mặc định), hoặc gõ tay — nếu linh kiện/giá chưa có trong CSDL, hệ thống sẽ tự thêm vào.</div>
         <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
     </form>

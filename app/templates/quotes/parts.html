@@ -225,6 +225,13 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="col-12">
+            <div class="form-check small d-inline-block rounded px-2 py-1" id="price-change-box">
+                <input class="form-check-input ms-0 me-1" type="checkbox" name="cap_nhat_gia" value="1" id="cap_nhat_gia">
+                <label class="form-check-label" for="cap_nhat_gia">Cập nhật giá/NCC mới vào CSDL linh kiện</label>
+                <span class="text-muted" id="price-change-info">— không tích: linh kiện đã có giá trong CSDL sẽ giữ nguyên giá cũ (dòng này dùng giá cũ).</span>
+            </div>
+        </div>
         <div class="col-12 text-muted small">Chọn 1 kết quả tìm kiếm ở trên để tự điền, hoặc gõ tay trực tiếp — nếu linh kiện/giá chưa có trong CSDL, hệ thống sẽ tự thêm vào. Chọn cụm ở trên để xếp dòng này vào đúng cụm.</div>
         <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
     </form>
