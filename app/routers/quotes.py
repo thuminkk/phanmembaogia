@@ -47,6 +47,8 @@ def quote_parts_page(request: Request, quote_id: int, db: Session = Depends(get_
     context = _quote_context(db, quote_id, "linh_kien")
     context["standard_groups"] = standard_groups_crud.list_groups(db)
     context["same_name_suggestions"] = crud.suggest_same_name_parts(db, context["quote"]) if context["quote"] else {}
+    context["picker_hang_options"] = parts_crud.distinct_values(db, "hang")
+    context["picker_loai_options"] = parts_crud.LOAI_OPTIONS
     return templates.TemplateResponse(request, "quotes/parts.html", context)
 
 
@@ -421,6 +423,23 @@ async def delete_part_lines(quote_id: int, request: Request, db: Session = Depen
     form = await request.form()
     ids = [int(v) for v in form.getlist("ids")]
     crud.delete_part_lines(db, quote_id, ids)
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
+@router.post("/{quote_id:int}/linh-kien/them-nhieu")
+async def add_part_lines_from_catalog(quote_id: int, request: Request, db: Session = Depends(get_db)):
+    """Thêm 1 loạt linh kiện đã tích chọn trong hộp "Chọn từ danh mục" — part_id và so_luong đi theo cặp."""
+    form = await request.form()
+    part_ids = form.getlist("part_id")
+    so_luongs = form.getlist("so_luong")
+    items = []
+    for pid, sl in zip(part_ids, so_luongs):
+        try:
+            items.append((int(pid), float(sl or 1)))
+        except ValueError:
+            continue
+    group_id = form.get("group_id") or ""
+    crud.add_part_lines_from_catalog(db, quote_id, items, int(group_id) if group_id else None)
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
 

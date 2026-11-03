@@ -23,6 +23,7 @@
         <input class="form-control form-control-sm" name="ten_cum" placeholder="Tên cụm mới (VD: Cụm tủ điện)" required>
         <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit">+ Thêm cụm</button>
     </form>
+    <button type="button" class="btn btn-sm btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#part-picker-modal">+ Chọn từ danh mục linh kiện</button>
     <a href="/bao-gia/{{ quote.id }}/linh-kien/nhap-ai" class="btn btn-sm btn-outline-secondary text-nowrap">Nhập bằng AI (văn bản/ảnh)</a>
     <a href="/bao-gia/{{ quote.id }}/linh-kien/nhap-dan" class="btn btn-sm btn-outline-secondary text-nowrap">Dán trực tiếp từ Excel</a>
     {% if standard_groups %}
@@ -254,6 +255,62 @@
     <input type="hidden" name="part_id">
     <input type="hidden" name="ca_bao_gia">
 </form>
+
+<div class="modal fade" id="part-picker-modal" tabindex="-1" aria-labelledby="part-picker-title" aria-hidden="true"
+    data-existing-part-ids="{{ quote.part_lines | map(attribute='part_id') | select | list | tojson | forceescape }}">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="part-picker-title">Chọn linh kiện từ danh mục</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <div class="row g-2 mb-2 position-sticky top-0 bg-white pb-2" style="z-index: 3;">
+                    <div class="col-md-5"><input class="form-control form-control-sm" type="text" id="pp-q" placeholder="Tên, mã hoặc hãng — gõ nhiều từ để lọc hẹp (VD: van SMC)" autocomplete="off"></div>
+                    <div class="col-md-2">
+                        <select class="form-select form-select-sm" id="pp-loai">
+                            <option value="">-- Mọi loại --</option>
+                            {% for o in picker_loai_options %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="pp-hang">
+                            <option value="">-- Mọi hãng --</option>
+                            {% for o in picker_hang_options %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="pp-co-gia">
+                            <label class="form-check-label small" for="pp-co-gia">Chỉ loại đã có giá</label>
+                        </div>
+                    </div>
+                    <div class="col-12 small text-muted" id="pp-status"></div>
+                </div>
+                <table class="table table-sm table-hover align-middle small mb-0">
+                    <thead><tr>
+                        <th style="width:32px"><input class="form-check-input" type="checkbox" id="pp-check-all" title="Chọn tất cả kết quả đang hiện"></th>
+                        <th>Mã</th><th>Tên</th><th>Hãng</th><th>Loại</th><th>NCC</th><th class="text-end">Đơn giá</th><th style="width:90px">SL</th>
+                    </tr></thead>
+                    <tbody id="pp-results"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <div class="small"><span class="fw-semibold" id="pp-selected-count">0</span> linh kiện đã chọn · tạm tính <span class="fw-semibold" id="pp-selected-total">0</span>đ
+                    <button type="button" class="btn btn-link btn-sm p-0 ms-2" id="pp-clear">Bỏ chọn hết</button></div>
+                <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/them-nhieu" id="pp-form" class="d-flex gap-2 align-items-center">
+                    <label class="small text-nowrap" for="pp-group">Thêm vào cụm</label>
+                    <select class="form-select form-select-sm" name="group_id" id="pp-group" style="width:220px">
+                        <option value="">-- Chưa phân cụm --</option>
+                        {% for g in quote.groups %}<option value="{{ g.id }}">{{ g.ten_cum }}</option>{% endfor %}
+                    </select>
+                    <div id="pp-hidden"></div>
+                    <button class="btn btn-primary btn-sm text-nowrap" type="submit" id="pp-submit" disabled>Thêm vào báo giá</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="{{ static_url('js/parts.js') }}"></script>
 <script src="{{ static_url('js/quotes.js') }}"></script>

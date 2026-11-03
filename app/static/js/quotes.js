@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initSaveAllLines();
     initGroupSelectAll();
     initReplacePart();
+    initPartPicker();
 
     const searchBox = document.getElementById("part-search");
     if (!searchBox) return;
@@ -270,6 +271,167 @@ function initDragDropReorder() {
                 body: "group_id=" + encodeURIComponent(groupId) + "&line_ids=" + encodeURIComponent(lineIds.join(",")),
             }).then(() => location.reload());
         });
+    });
+}
+
+function initPartPicker() {
+    // Hộp "Chọn từ danh mục linh kiện": lọc CSDL (/linh-kien/loc) -> tích nhiều dòng + sửa SL -> chọn cụm
+    // -> nộp 1 lần. Đã tích lưu trong `selected` nên đổi bộ lọc để tìm tiếp không mất lựa chọn trước.
+    const modalEl = document.getElementById("part-picker-modal");
+    if (!modalEl) return;
+    const qBox = document.getElementById("pp-q");
+    const loaiBox = document.getElementById("pp-loai");
+    const hangBox = document.getElementById("pp-hang");
+    const coGiaBox = document.getElementById("pp-co-gia");
+    const statusBox = document.getElementById("pp-status");
+    const tbody = document.getElementById("pp-results");
+    const checkAll = document.getElementById("pp-check-all");
+    const countBox = document.getElementById("pp-selected-count");
+    const totalBox = document.getElementById("pp-selected-total");
+    const hiddenBox = document.getElementById("pp-hidden");
+    const submitBtn = document.getElementById("pp-submit");
+    const existing = new Set(JSON.parse(modalEl.dataset.existingPartIds || "[]"));
+    const fmt = (n) => Number(n || 0).toLocaleString("vi-VN");
+    const selected = new Map(); // part_id -> {part, so_luong}
+    let shown = [];
+    let loaded = false;
+    let debounceTimer;
+    let requestNo = 0;
+
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined && text !== null) node.textContent = text;
+        return node;
+    }
+
+    function load() {
+        const params = new URLSearchParams({
+            q: qBox.value.trim(), loai: loaiBox.value, hang: hangBox.value, co_gia: coGiaBox.checked ? "1" : "",
+        });
+        const myNo = ++requestNo;
+        statusBox.textContent = "Đang tải...";
+        fetch("/linh-kien/loc?" + params)
+            .then((r) => r.json())
+            .then((data) => {
+                if (myNo !== requestNo) return; // đã có lần lọc mới hơn
+                shown = data.items;
+                statusBox.textContent = data.total > data.items.length
+                    ? "Hiện " + data.items.length + " / " + data.total + " linh kiện khớp — gõ thêm từ khóa hoặc chọn loại/hãng để lọc hẹp hơn."
+                    : data.total + " linh kiện khớp.";
+                render();
+            });
+    }
+
+    function render() {
+        tbody.innerHTML = "";
+        if (!shown.length) {
+            const tr = el("tr");
+            const td = el("td", "text-center text-muted py-3", "Không có linh kiện nào khớp bộ lọc.");
+            td.colSpan = 8;
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+        }
+        shown.forEach((p) => {
+            const tr = el("tr");
+            const sel = selected.get(p.part_id);
+            if (sel) tr.classList.add("table-primary");
+
+            const cb = el("input", "form-check-input");
+            cb.type = "checkbox";
+            cb.checked = !!sel;
+            const tdCb = el("td");
+            tdCb.appendChild(cb);
+            tr.appendChild(tdCb);
+
+            const tdMa = el("td", "fw-semibold text-nowrap", p.ma_linh_kien || "(không mã)");
+            if (existing.has(p.part_id)) {
+                tdMa.appendChild(document.createTextNode(" "));
+                tdMa.appendChild(el("span", "badge text-bg-secondary fw-normal", "đã có trong BG"));
+            }
+            tr.appendChild(tdMa);
+            tr.appendChild(el("td", "", p.ten_linh_kien));
+            tr.appendChild(el("td", "text-nowrap", p.hang || "—"));
+            tr.appendChild(el("td", "text-nowrap", p.loai || ""));
+            tr.appendChild(el("td", "text-muted", p.nha_cung_cap || "(chưa rõ NCC)"));
+            tr.appendChild(el("td", "text-end text-nowrap" + (p.don_gia ? "" : " text-danger"), p.don_gia ? fmt(p.don_gia) : "chưa có giá"));
+
+            const sl = el("input", "form-control form-control-sm");
+            sl.type = "number";
+            sl.min = "0";
+            sl.step = "any";
+            sl.value = sel ? sel.so_luong : 1;
+            const tdSl = el("td");
+            tdSl.appendChild(sl);
+            tr.appendChild(tdSl);
+
+            cb.addEventListener("change", () => {
+                if (cb.checked) selected.set(p.part_id, { part: p, so_luong: Number(sl.value) || 1 });
+                else selected.delete(p.part_id);
+                tr.classList.toggle("table-primary", cb.checked);
+                updateSummary();
+            });
+            sl.addEventListener("input", () => {
+                if (Number(sl.value) > 0 && !cb.checked) {
+                    cb.checked = true; // sửa SL tức là muốn lấy dòng này
+                    tr.classList.add("table-primary");
+                }
+                if (cb.checked) selected.set(p.part_id, { part: p, so_luong: Number(sl.value) || 1 });
+                updateSummary();
+            });
+            // Bấm vào chỗ trống của dòng cũng tích/bỏ tích cho nhanh.
+            tr.addEventListener("click", (e) => {
+                if (e.target === cb || e.target === sl) return;
+                cb.checked = !cb.checked;
+                cb.dispatchEvent(new Event("change"));
+            });
+            tbody.appendChild(tr);
+        });
+        updateSummary();
+    }
+
+    function updateSummary() {
+        let total = 0;
+        hiddenBox.innerHTML = "";
+        selected.forEach((s, partId) => {
+            total += (s.part.don_gia || 0) * s.so_luong;
+            const pid = el("input");
+            pid.type = "hidden"; pid.name = "part_id"; pid.value = partId;
+            const sl = el("input");
+            sl.type = "hidden"; sl.name = "so_luong"; sl.value = s.so_luong;
+            hiddenBox.append(pid, sl);
+        });
+        countBox.textContent = selected.size;
+        totalBox.textContent = fmt(total);
+        submitBtn.disabled = selected.size === 0;
+        submitBtn.textContent = selected.size ? "Thêm " + selected.size + " linh kiện vào báo giá" : "Thêm vào báo giá";
+        checkAll.checked = shown.length > 0 && shown.every((p) => selected.has(p.part_id));
+    }
+
+    checkAll.addEventListener("change", () => {
+        shown.forEach((p) => {
+            if (checkAll.checked) {
+                if (!selected.has(p.part_id)) selected.set(p.part_id, { part: p, so_luong: 1 });
+            } else {
+                selected.delete(p.part_id);
+            }
+        });
+        render();
+    });
+    document.getElementById("pp-clear").addEventListener("click", () => {
+        selected.clear();
+        render();
+    });
+    qBox.addEventListener("input", () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(load, 300);
+    });
+    [loaiBox, hangBox, coGiaBox].forEach((box) => box.addEventListener("change", load));
+    // Enter trong ô tìm không được nộp form/đóng hộp.
+    qBox.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
+    modalEl.addEventListener("shown.bs.modal", () => {
+        if (!loaded) { loaded = true; load(); }
+        qBox.focus();
     });
 }
 

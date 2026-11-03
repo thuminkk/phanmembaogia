@@ -4,7 +4,7 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy import distinct, func, select
 from sqlalchemy import update as sa_update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.models import Part, PartSupplierPrice, QuotePartLine, StandardGroupLine
 from app.schemas.parts import CandidateRow, PartIn, SupplierPriceIn
@@ -60,6 +60,37 @@ def search_parts_with_prices(db: Session, q: str, limit: int = 20) -> list[Part]
         .limit(limit)
     )
     return db.scalars(query).unique().all()
+
+
+PICKER_LIMIT = 200
+
+
+def filter_parts_for_picker(
+    db: Session, q: str = "", hang: str = "", loai: str = "", chi_co_gia: bool = False
+) -> tuple[list[Part], int]:
+    """Lọc danh mục linh kiện cho hộp "Chọn từ danh mục" của báo giá: mỗi từ gõ vào phải khớp
+    tên, mã hoặc hãng (VD "van SMC 5/2"). Trả về tối đa PICKER_LIMIT dòng + tổng số khớp."""
+    query = select(Part).where(Part.is_active.is_(True))
+    for word in q.split():
+        pattern = f"%{word}%"
+        query = query.where(
+            Part.ten_linh_kien.ilike(pattern) | Part.ma_linh_kien.ilike(pattern) | Part.hang.ilike(pattern)
+        )
+    if hang:
+        query = query.where(Part.hang == hang)
+    if loai:
+        query = query.where(Part.loai == loai)
+    if chi_co_gia:
+        query = query.where(
+            Part.suppliers.any((PartSupplierPrice.is_active.is_(True)) & (PartSupplierPrice.don_gia > 0))
+        )
+    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
+    query = (
+        query.options(selectinload(Part.suppliers))
+        .order_by(Part.loai, Part.ten_linh_kien, Part.ma_linh_kien)
+        .limit(PICKER_LIMIT)
+    )
+    return db.scalars(query).all(), total
 
 
 def create_part(db: Session, data: PartIn) -> Part:

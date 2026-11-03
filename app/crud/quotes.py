@@ -501,6 +501,41 @@ def delete_part_lines(db: Session, quote_id: int, line_ids: list[int]) -> None:
     db.commit()
 
 
+def add_part_lines_from_catalog(
+    db: Session, quote_id: int, items: list[tuple[int, float]], group_id: int | None
+) -> int:
+    """Thêm 1 loạt linh kiện chọn từ danh mục CSDL (part_id, số lượng) vào cuối cụm group_id,
+    lấy giá/NCC hiện tại của từng linh kiện (chưa có giá -> 0đ, vẫn thêm để điền sau)."""
+    if group_id is not None:
+        group = db.get(QuoteComponentGroup, group_id)
+        if group is None or group.quote_id != quote_id:
+            return 0
+    thu_tu = _next_part_line_thu_tu(db, quote_id, group_id)
+    added = 0
+    for part_id, so_luong in items:
+        part = db.get(Part, part_id)
+        if part is None or not part.is_active or so_luong <= 0:
+            continue
+        price = part.price
+        db.add(QuotePartLine(
+            quote_id=quote_id,
+            group_id=group_id,
+            thu_tu=thu_tu + added,
+            part_id=part.id,
+            supplier_price_id=price.id if price else None,
+            ten_linh_kien=part.ten_linh_kien,
+            ma_linh_kien=part.ma_linh_kien,
+            hang=part.hang,
+            nha_cung_cap=price.nha_cung_cap if price else None,
+            don_vi=part.don_vi,
+            so_luong=so_luong,
+            don_gia=price.don_gia if price else 0,
+        ))
+        added += 1
+    db.commit()
+    return added
+
+
 def move_part_lines(db: Session, quote_id: int, line_ids: list[int], group_id: int | None) -> int:
     """Chuyển nhiều dòng vào 1 cụm (None = chưa phân cụm): xếp nối vào cuối cụm đích, giữ thứ tự line_ids."""
     if group_id is not None:

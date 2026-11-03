@@ -65,6 +65,26 @@ def search_parts(q: str = "", db: Session = Depends(get_db)):
     ]
 
 
+@router.get("/loc")
+def filter_parts(q: str = "", hang: str = "", loai: str = "", co_gia: str = "", db: Session = Depends(get_db)):
+    """Dữ liệu cho hộp "Chọn từ danh mục linh kiện" trong báo giá (xem quotes.js initPartPicker)."""
+    parts, total = crud.filter_parts_for_picker(db, q=q, hang=hang, loai=loai, chi_co_gia=bool(co_gia))
+    items = []
+    for p in parts:
+        price = p.price
+        items.append({
+            "part_id": p.id,
+            "ten_linh_kien": p.ten_linh_kien,
+            "ma_linh_kien": p.ma_linh_kien,
+            "hang": p.hang,
+            "loai": p.loai,
+            "don_vi": p.don_vi,
+            "nha_cung_cap": price.nha_cung_cap if price else None,
+            "don_gia": price.don_gia if price else 0,
+        })
+    return {"total": total, "limit": crud.PICKER_LIMIT, "items": items}
+
+
 @router.post("/{part_id:int}/sua-loai")
 def quick_update_loai(
     part_id: int,
