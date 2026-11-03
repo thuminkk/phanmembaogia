@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Kinh nghiệm AI - {{ app_name }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Kinh nghiệm AI</h1>
+<p class="text-muted small mb-4" style="max-width: 900px;">
+    Quy tắc / bài học AI dùng mỗi khi <strong>Tự lên BOM</strong> (nút trong tab Linh kiện tiêu chuẩn của báo giá).
+    Bài học được AI rút ra sau mỗi lần bạn sửa BOM đề xuất, hoặc bạn tự thêm. Bỏ tích "Đang dùng" để tạm tắt 1 bài học.
+</p>
+
+<form method="post" action="/kinh-nghiem-ai/moi" class="d-flex gap-2 align-items-start bg-white p-3 rounded shadow-sm mb-4" style="max-width: 1000px;">
+    <select class="form-select form-select-sm" name="nhom" style="width: 150px;">
+        {% for g in experience_groups %}<option>{{ g }}</option>{% endfor %}
+    </select>
+    <textarea class="form-control form-control-sm" name="noi_dung" rows="2" required placeholder="VD: Manifold chọn số trạm chẵn ≥ số van + 2 trạm dự phòng, trạm thừa dùng blank plate."></textarea>
+    <button class="btn btn-sm btn-primary text-nowrap" type="submit">+ Thêm</button>
+</form>
+
+<div class="table-responsive" style="max-width: 1200px;">
+    <table class="table table-sm bg-white align-middle small">
+        <thead><tr><th style="width:150px">Nhóm</th><th>Nội dung</th><th>Nguồn</th><th>Đang dùng</th><th></th></tr></thead>
+        <tbody>
+        {% for e in items %}
+        <tr class="{% if not e.is_active %}opacity-50{% endif %}">
+            <td>
+                <select class="form-select form-select-sm" name="nhom" form="exp-{{ e.id }}">
+                    {% for g in experience_groups %}<option {% if g == e.nhom %}selected{% endif %}>{{ g }}</option>{% endfor %}
+                    {% if e.nhom not in experience_groups %}<option selected>{{ e.nhom }}</option>{% endif %}
+                </select>
+            </td>
+            <td><textarea class="form-control form-control-sm" name="noi_dung" rows="2" form="exp-{{ e.id }}" required>{{ e.noi_dung }}</textarea></td>
+            <td class="text-nowrap">
+                {% if e.nguon == "ai" %}<span class="badge text-bg-info fw-normal">AI rút ra</span>{% else %}<span class="badge text-bg-light border fw-normal">Tự nhập</span>{% endif %}
+                <div class="text-muted">{{ e.created_at.strftime("%d/%m/%Y") }}</div>
+            </td>
+            <td><input class="form-check-input" type="checkbox" name="is_active" value="1" form="exp-{{ e.id }}" {% if e.is_active %}checked{% endif %}></td>
+            <td class="text-nowrap">
+                <form id="exp-{{ e.id }}" method="post" action="/kinh-nghiem-ai/{{ e.id }}/sua" class="d-inline">
+                    <button class="btn btn-sm btn-outline-primary" type="submit">Lưu</button>
+                </form>
+                <form method="post" action="/kinh-nghiem-ai/{{ e.id }}/xoa" class="d-inline" onsubmit="return confirm('Xóa bài học này?');">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Xóa</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">Chưa có kinh nghiệm nào.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Rút kinh nghiệm - {{ quote.ma_bao_gia }} - {{ app_name }}{% endblock %}
+{% block content %}
+{% include "quotes/_title.html" %}
+{% include "quotes/_subnav.html" %}
+
+<div class="d-flex justify-content-between align-items-start mb-2">
+    <h2 class="h5 mb-1">Bài học AI rút ra từ lần lên BOM #{{ req.id }}</h2>
+    <a href="/bao-gia/{{ quote.id }}/tu-dong-bom/{{ req.id }}" class="btn btn-sm btn-outline-secondary">← Quay lại BOM</a>
+</div>
+
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+
+<details class="mb-3">
+    <summary class="small text-muted">Các thay đổi bạn đã làm so với đề xuất ({{ changes | length }})</summary>
+    <ul class="small mt-2">{% for c in changes %}<li>{{ c }}</li>{% else %}<li>Không có thay đổi.</li>{% endfor %}</ul>
+</details>
+
+<form method="post" action="/bao-gia/{{ quote.id }}/tu-dong-bom/{{ req.id }}/luu-kinh-nghiem" class="bg-white p-3 rounded shadow-sm" style="max-width: 1000px;">
+    <p class="small text-muted">Tích những bài học đúng, sửa lại câu chữ nếu cần, rồi lưu. Bài học đã lưu được áp dụng cho mọi lần AI lên BOM sau này (quản lý ở trang <a href="/kinh-nghiem-ai">Kinh nghiệm AI</a>).</p>
+    {% for l in lessons %}
+    {% set i = loop.index0 %}
+    <div class="d-flex gap-2 align-items-start mb-2">
+        <input class="form-check-input mt-2" type="checkbox" name="chon_{{ i }}" value="1" checked>
+        <select class="form-select form-select-sm" name="nhom_{{ i }}" style="width: 150px;">
+            {% for g in experience_groups %}<option {% if g == l.nhom %}selected{% endif %}>{{ g }}</option>{% endfor %}
+            {% if l.nhom not in experience_groups %}<option selected>{{ l.nhom }}</option>{% endif %}
+        </select>
+        <textarea class="form-control form-control-sm" name="noi_dung_{{ i }}" rows="2">{{ l.noi_dung }}</textarea>
+    </div>
+    {% endfor %}
+    {% set i = lessons | length %}
+    <div class="d-flex gap-2 align-items-start mb-3">
+        <input class="form-check-input mt-2" type="checkbox" name="chon_{{ i }}" value="1" checked>
+        <select class="form-select form-select-sm" name="nhom_{{ i }}" style="width: 150px;">
+            {% for g in experience_groups %}<option>{{ g }}</option>{% endfor %}
+        </select>
+        <textarea class="form-control form-control-sm" name="noi_dung_{{ i }}" rows="2" placeholder="Tự thêm 1 bài học (không bắt buộc)"></textarea>
+    </div>
+    {% if not lessons and not error %}<p class="small">AI không thấy quy luật nào đáng ghi nhớ từ lần sửa này. Bạn có thể tự thêm ở ô trên.</p>{% endif %}
+    <button class="btn btn-success btn-sm" type="submit">Lưu bài học đã chọn</button>
+</form>
+{% endblock %}

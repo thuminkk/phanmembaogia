@@ -7,7 +7,9 @@ class DeepSeekProvider(OpenAIProvider):
     def __init__(self, api_key: str, model: str = "deepseek-chat"):
         super().__init__(api_key=api_key, model=model, base_url="https://api.deepseek.com")
 
-    def generate(self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None) -> str:
+    def generate(
+        self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None, max_tokens: int = 4096
+    ) -> str:
         if image_bytes:
             raise ValueError("DeepSeek (deepseek-chat) không hỗ trợ đọc ảnh — chọn Claude, OpenAI hoặc Gemini.")
-        return super().generate(prompt)
+        return super().generate(prompt, max_tokens=max_tokens)

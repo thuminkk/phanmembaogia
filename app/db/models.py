@@ -359,3 +359,37 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+
+class BomRequest(Base):
+    """1 lần "Tự lên BOM bằng AI" cho 1 báo giá: phiếu yêu cầu đã nhập, đề xuất của AI và kết quả đã áp
+    dụng — giữ lại để so sánh đề xuất với báo giá cuối cùng mà rút kinh nghiệm cho AI (AiExperience)."""
+
+    __tablename__ = "bom_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    quote_id: Mapped[int] = mapped_column(ForeignKey("quotes.id"), index=True)
+    form_json: Mapped[str] = mapped_column(Text)  # dict các trường phiếu yêu cầu (xem services/bom_form.py)
+    proposal_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # đề xuất AI đã đối chiếu CSDL
+    applied_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # {"group_ids": [...]} đã tạo/ghi vào
+    provider: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+    applied_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+    learned_at: Mapped[datetime.datetime | None] = mapped_column(DateTime, nullable=True)
+
+    quote: Mapped["Quote"] = relationship()
+
+
+class AiExperience(Base):
+    """1 bài học kinh nghiệm cho AI lên BOM (VD "Manifold chọn số trạm chẵn ≥ số van + 2 dự phòng").
+    Bài học đang bật được đưa vào mọi lần AI lên BOM sau đó -> AI "giỏi dần" theo cách làm của công ty."""
+
+    __tablename__ = "ai_experiences"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nhom: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Tủ điện / Khí nén / ... / Chung
+    noi_dung: Mapped[str] = mapped_column(Text)
+    nguon: Mapped[str] = mapped_column(String(20), default="tay")  # "tay" = tự nhập, "ai" = AI rút ra, đã duyệt
+    bom_request_id: Mapped[int | None] = mapped_column(ForeignKey("bom_requests.id"), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)

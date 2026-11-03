@@ -9,7 +9,9 @@ class OpenAIProvider(AIProvider):
         self.model = model
         self.base_url = base_url
 
-    def generate(self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None) -> str:
+    def generate(
+        self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None, max_tokens: int = 4096
+    ) -> str:
         from openai import OpenAI
 
         if image_bytes:

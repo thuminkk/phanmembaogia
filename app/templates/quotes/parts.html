@@ -23,6 +23,7 @@
         <input class="form-control form-control-sm" name="ten_cum" placeholder="Tên cụm mới (VD: Cụm tủ điện)" required>
         <button class="btn btn-sm btn-outline-primary text-nowrap" type="submit">+ Thêm cụm</button>
     </form>
+    <a href="/bao-gia/{{ quote.id }}/tu-dong-bom" class="btn btn-sm btn-success text-nowrap">Tự lên BOM bằng AI</a>
     <button type="button" class="btn btn-sm btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#part-picker-modal">+ Chọn từ danh mục linh kiện</button>
     <a href="/bao-gia/{{ quote.id }}/linh-kien/nhap-ai" class="btn btn-sm btn-outline-secondary text-nowrap">Nhập bằng AI (văn bản/ảnh)</a>
     <a href="/bao-gia/{{ quote.id }}/linh-kien/nhap-dan" class="btn btn-sm btn-outline-secondary text-nowrap">Dán trực tiếp từ Excel</a>

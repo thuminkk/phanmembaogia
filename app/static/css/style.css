@@ -4,6 +4,7 @@ body {
 
 .sidebar {
     width: 220px;
+    flex-shrink: 0; /* nội dung rộng (bảng, form nhiều cột) không được bóp hẹp menu */
     min-height: 100vh;
     background-color: #1e2a3a;
 }
@@ -135,4 +136,8 @@ body {
     top: 0;
     background-color: #fff;
     z-index: 2;
+}
+
+main.content {
+    min-width: 0; /* cho phép vùng nội dung co lại / cuộn ngang bên trong thay vì đẩy menu */
 }

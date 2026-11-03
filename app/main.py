@@ -23,6 +23,7 @@ from app.routers import (
     quote_templates,
     quotes,
     quotes_ai,
+    quotes_bom,
     quotes_paste,
     settings,
     standard_groups,
@@ -93,6 +94,7 @@ app.include_router(standard_groups_ai.router)
 app.include_router(standard_groups_paste.router)
 app.include_router(standard_groups.router)
 app.include_router(quotes_ai.router)
+app.include_router(quotes_bom.router)
 app.include_router(quotes_paste.router)
 app.include_router(quote_io.router)
 app.include_router(quotes.router)

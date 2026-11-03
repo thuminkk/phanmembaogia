@@ -8,7 +8,9 @@ class ClaudeProvider(AIProvider):
         self.api_key = api_key
         self.model = model
 
-    def generate(self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None) -> str:
+    def generate(
+        self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None, max_tokens: int = 4096
+    ) -> str:
         import anthropic
 
         content: list[dict] = []
@@ -28,7 +30,7 @@ class ClaudeProvider(AIProvider):
         client = anthropic.Anthropic(api_key=self.api_key)
         response = client.messages.create(
             model=self.model,
-            max_tokens=4096,
+            max_tokens=max_tokens,
             messages=[{"role": "user", "content": content}],
         )
         return response.content[0].text

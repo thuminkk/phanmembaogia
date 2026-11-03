@@ -6,7 +6,9 @@ class GeminiProvider(AIProvider):
         self.api_key = api_key
         self.model = model
 
-    def generate(self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None) -> str:
+    def generate(
+        self, prompt: str, image_bytes: bytes | None = None, image_mime: str | None = None, max_tokens: int = 4096
+    ) -> str:
         import google.generativeai as genai
 
         genai.configure(api_key=self.api_key)
@@ -14,5 +16,5 @@ class GeminiProvider(AIProvider):
         parts = [prompt]
         if image_bytes:
             parts.append({"mime_type": image_mime or "image/png", "data": image_bytes})
-        response = model.generate_content(parts)
+        response = model.generate_content(parts, generation_config={"max_output_tokens": max_tokens})
         return response.text
