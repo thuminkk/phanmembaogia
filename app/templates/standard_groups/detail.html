@@ -28,6 +28,11 @@
     </div>
 </div>
 
+{% if group.lines %}
+<div class="d-flex justify-content-end mb-2">
+    <button type="button" class="btn btn-sm btn-outline-primary" id="save-all-lines" data-form-prefix="line-">Lưu tất cả</button>
+</div>
+{% endif %}
 <div class="table-responsive mb-3">
     <table class="table table-sm bg-white align-middle">
         <thead><tr><th>Tên</th><th>Mã</th><th>Hãng</th><th>Nhà cung cấp mặc định</th><th>Đ.vị</th><th>SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th><th>Ghi chú</th><th></th></tr></thead>

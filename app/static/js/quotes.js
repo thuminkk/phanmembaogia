@@ -175,7 +175,9 @@ function initSaveAllLines() {
     if (!btn) return;
 
     btn.addEventListener("click", function () {
-        const forms = Array.from(document.querySelectorAll('form[id^="pl-"]'));
+        // data-form-prefix: tiền tố id form từng dòng ("pl-" ở báo giá, "line-" ở cụm mẫu).
+        const prefix = btn.dataset.formPrefix || "pl-";
+        const forms = Array.from(document.querySelectorAll('form[id^="' + prefix + '"]'));
         if (!forms.length) return;
         const originalText = btn.textContent;
         btn.disabled = true;
