@@ -202,7 +202,7 @@ function initAutoSaveLines() {
     const status = document.getElementById("autosave-status");
     if (!undoBtn || !redoBtn) return;
 
-    const FIELDS = ["ten_linh_kien", "ma_linh_kien", "hang", "don_vi", "so_luong"];
+    const FIELDS = ["ten_linh_kien", "ma_linh_kien", "hang", "don_vi", "so_luong", "don_gia"]; // don_gia: chỉ dòng tự do
 
     function setStatus(text, cls) {
         if (!status) return;
@@ -217,7 +217,9 @@ function initAutoSaveLines() {
     function lineTotal(row) {
         const cell = row.querySelector(".line-thanh-tien");
         const sl = row.querySelector('[name="so_luong"]');
-        return cell && sl ? Number(cell.dataset.gia || 0) * Number(sl.value || 0) : 0;
+        const gia = row.querySelector('[name="don_gia"]'); // dòng tự do: giá là ô nhập
+        if (!cell || !sl) return 0;
+        return Number(gia ? gia.value : cell.dataset.gia || 0) * Number(sl.value || 0);
     }
 
     function refreshTotals(row) {
@@ -278,7 +280,7 @@ function initAutoSaveLines() {
                 }
             });
             input.addEventListener("input", () => {
-                if (input.name === "so_luong") refreshTotals(input.closest("tr"));
+                if (input.name === "so_luong" || input.name === "don_gia") refreshTotals(input.closest("tr"));
             });
             input.addEventListener("change", () => {
                 if (input.value === input.dataset.prev) return;

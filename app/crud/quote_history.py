@@ -91,8 +91,12 @@ def describe(before: str, after: str) -> str:
     for i in common:
         for f, lbl in FIELD_LABELS.items():
             if al[i][f] != bl[i][f]:
-                fmt = (lambda v: f"{v:g}") if f in ("so_luong", "don_gia") else (lambda v: v or "")
+                fmt = {"so_luong": lambda v: f"{v:g}", "don_gia": lambda v: f"{v:,.0f}"}.get(f, lambda v: v or "")
                 edits.append(f"Sửa {lbl} «{bl[i]['ten_linh_kien']}»: {fmt(bl[i][f])} → {fmt(al[i][f])}")
+    for i in common:
+        if (al[i]["part_id"] is None) != (bl[i]["part_id"] is None):
+            verb = "Chuyển tự do" if al[i]["part_id"] is None else "Gắn CSDL"
+            edits.append(f"{verb} «{al[i]['ten_linh_kien']}»")
     if len(edits) == 1:
         parts.append(edits[0])
     elif edits:

@@ -185,6 +185,11 @@ class QuotePartLine(Base):
         return self.so_luong * self.don_gia
 
     @property
+    def la_tu_do(self) -> bool:
+        """Dòng tự do: không gắn CSDL linh kiện (VD tủ điện, phụ kiện khác) — giá sửa tự do ngay trên báo giá."""
+        return self.part_id is None
+
+    @property
     def gia_lech_csdl(self) -> bool:
         """True nếu giá dòng báo giá này khác với giá hiện tại của đúng NCC đó trong CSDL linh kiện."""
         return self.supplier_price is not None and self.don_gia != self.supplier_price.don_gia
@@ -315,20 +320,58 @@ class StandardGroupLine(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     standard_group_id: Mapped[int] = mapped_column(ForeignKey("standard_groups.id"), index=True)
-    part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"))
-    supplier_price_id: Mapped[int] = mapped_column(ForeignKey("part_supplier_prices.id"))
+    # part_id = None: "dòng tự do" (VD tủ điện, phụ kiện khác) — không phải linh kiện tiêu chuẩn có mã,
+    # không lưu vào CSDL linh kiện; tên/đơn vị/giá lưu ngay trên dòng (*_tu_do).
+    part_id: Mapped[int | None] = mapped_column(ForeignKey("parts.id"), nullable=True)
+    supplier_price_id: Mapped[int | None] = mapped_column(ForeignKey("part_supplier_prices.id"), nullable=True)
     so_luong: Mapped[float] = mapped_column(Float, default=1)
     ghi_chu: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ten_tu_do: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    don_vi_tu_do: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    gia_tu_do: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     standard_group: Mapped["StandardGroup"] = relationship(back_populates="lines")
-    part: Mapped["Part"] = relationship()
-    supplier_price: Mapped["PartSupplierPrice"] = relationship()
+    part: Mapped["Part | None"] = relationship()
+    supplier_price: Mapped["PartSupplierPrice | None"] = relationship()
+
+    @property
+    def la_tu_do(self) -> bool:
+        return self.part_id is None
+
+    @property
+    def ten_linh_kien(self) -> str:
+        return self.part.ten_linh_kien if self.part else (self.ten_tu_do or "")
+
+    @property
+    def ma_linh_kien(self) -> str | None:
+        return self.part.ma_linh_kien if self.part else None
+
+    @property
+    def hang(self) -> str | None:
+        return self.part.hang if self.part else None
+
+    @property
+    def don_vi(self) -> str | None:
+        return self.part.don_vi if self.part else self.don_vi_tu_do
+
+    @property
+    def price(self) -> "PartSupplierPrice | None":
+        """Giá/NCC LIVE từ CSDL (None với dòng tự do)."""
+        if self.part is None:
+            return None
+        return self.supplier_price if self.supplier_price and self.supplier_price.is_active else self.part.price
+
+    @property
+    def nha_cung_cap(self) -> str | None:
+        return self.price.nha_cung_cap if self.price else None
 
     @property
     def don_gia(self) -> float:
-        """Đơn giá LIVE từ CSDL — cùng nguồn giá mà apply_group_to_quote() dùng khi áp cụm vào báo giá."""
-        price = self.supplier_price if self.supplier_price and self.supplier_price.is_active else self.part.price
-        return price.don_gia if price else 0
+        """Đơn giá LIVE từ CSDL — cùng nguồn giá mà apply_group_to_quote() dùng khi áp cụm vào báo giá.
+        Dòng tự do: giá nhập tay lưu trên dòng."""
+        if self.part is None:
+            return self.gia_tu_do or 0
+        return self.price.don_gia if self.price else 0
 
     @property
     def thanh_tien(self) -> float:

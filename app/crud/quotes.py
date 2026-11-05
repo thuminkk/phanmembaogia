@@ -357,6 +357,24 @@ def add_part_line(
             don_gia=price.don_gia,
             ghi_chu=ghi_chu,
         )
+    elif not part_id and not (ma_linh_kien or "").strip():
+        # Không có mã -> "dòng tự do" (VD tủ điện, phụ kiện khác): không phải linh kiện tiêu chuẩn,
+        # KHÔNG tạo/cập nhật gì trong CSDL linh kiện, giá chỉ nằm trên báo giá này (2026-11-05).
+        line = QuotePartLine(
+            quote_id=quote_id,
+            group_id=group_id,
+            thu_tu=thu_tu,
+            part_id=None,
+            supplier_price_id=None,
+            ten_linh_kien=ten_linh_kien,
+            ma_linh_kien=None,
+            hang=hang,
+            nha_cung_cap=nha_cung_cap,
+            don_vi=don_vi,
+            so_luong=so_luong,
+            don_gia=don_gia or 0,
+            ghi_chu=ghi_chu,
+        )
     else:
         # Nhập tay: tự động tìm/tạo trong CSDL linh kiện (không bao giờ có giá "trôi nổi").
         # cap_nhat_gia=False (dòng đổi giá nhưng người dùng KHÔNG tích xác nhận): CSDL giữ nguyên
@@ -486,6 +504,37 @@ def update_part_line(db: Session, line: QuotePartLine, **fields) -> QuotePartLin
     db.commit()
     db.refresh(line)
     return line
+
+
+def make_line_free(db: Session, line: QuotePartLine) -> None:
+    """Gỡ liên kết CSDL -> dòng tự do: giữ nguyên tên/mã/giá hiện tại, từ đó giá sửa tự do trên báo giá."""
+    line.part_id = None
+    line.supplier_price_id = None
+    db.commit()
+
+
+def link_line_to_csdl(db: Session, line: QuotePartLine) -> bool:
+    """Dòng tự do có mã -> gắn vào CSDL linh kiện (tìm theo mã + hãng, chưa có thì tạo mới với giá của dòng).
+    Linh kiện đã có giá trong CSDL thì GIỮ giá CSDL và dòng lấy theo giá đó (như thêm dòng không tích cập nhật giá)."""
+    if not (line.ma_linh_kien or "").strip():
+        return False
+    part, price, _action = parts_crud.find_or_create_part_price(
+        db,
+        ma_linh_kien=line.ma_linh_kien,
+        ten_linh_kien=line.ten_linh_kien,
+        hang=line.hang,
+        nha_cung_cap=line.nha_cung_cap,
+        don_gia=line.don_gia,
+        don_vi=line.don_vi,
+        cap_nhat_gia=False,
+    )
+    line.part_id = part.id
+    line.supplier_price_id = price.id if price else None
+    if price:
+        line.don_gia = price.don_gia
+        line.nha_cung_cap = price.nha_cung_cap
+    db.commit()
+    return True
 
 
 def delete_part_line(db: Session, line: QuotePartLine) -> None:

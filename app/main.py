@@ -11,7 +11,7 @@ from app.core.config import APP_NAME, BASE_DIR, SECRET_KEY, SESSION_HTTPS_ONLY
 from app.crud import quote_history
 from app.crud import users as users_crud
 from app.db import models  # noqa: F401 - đăng ký model với Base trước khi create_all
-from app.db.database import Base, SessionLocal, engine
+from app.db.database import Base, SessionLocal, engine, upgrade_schema
 from app.routers import (
     auth,
     dashboard,
@@ -34,6 +34,7 @@ from app.routers import (
 )
 
 Base.metadata.create_all(bind=engine)
+upgrade_schema()
 with SessionLocal() as _db:
     users_crud.ensure_first_admin(_db)
 

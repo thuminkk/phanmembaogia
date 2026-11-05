@@ -123,10 +123,7 @@ def _catalog_block(db: Session) -> str:
     for g in groups:
         out.append(f"### [cum_mau_id={g.id}] {g.ten_cum}" + (f" — {g.mo_ta}" if g.mo_ta else ""))
         for line in g.lines:
-            p = line.part
-            if p is None:
-                continue
-            out.append(f"L{line.id} | {p.ma_linh_kien or '-'} | {p.ten_linh_kien} | {p.hang or '-'} | {line.so_luong:g}")
+            out.append(f"L{line.id} | {line.ma_linh_kien or '-'} | {line.ten_linh_kien} | {line.hang or '-'} | {line.so_luong:g}")
     return "\n".join(out) or "(chưa có cụm mẫu)"
 
 
@@ -233,8 +230,13 @@ def generate_bom(db: Session, form_data: dict) -> tuple[dict, str]:
                     sgl = db.get(StandardGroupLine, int(str(ref).lstrip("Ll")))
                 except ValueError:
                     sgl = None
-                if sgl is None or sgl.part is None:
+                if sgl is None:
                     proposal["luu_y"].append(f"AI trỏ tới dòng cụm mẫu L{ref} không tồn tại — đã bỏ qua.")
+                    continue
+                if sgl.part is None:  # dòng tự do của cụm mẫu (tủ điện, phụ kiện...) — giá lưu trên cụm mẫu
+                    out["dong"].append({"nguon": "mau", "nguon_ten": sgl.standard_group.ten_cum, "part_id": None,
+                                        "ma": "", "ten": sgl.ten_linh_kien, "hang": "", "don_vi": sgl.don_vi or "",
+                                        "don_gia": sgl.don_gia, "sl": sl, "ly_do": ly_do})
                     continue
                 out["dong"].append(_item_from_part(sgl.part, sl, ly_do, "mau", sgl.standard_group.ten_cum))
                 continue

@@ -53,6 +53,9 @@ def clone_group(db: Session, source_group_id: int, ten_cum: str, mo_ta: str | No
                 supplier_price_id=line.supplier_price_id,
                 so_luong=line.so_luong,
                 ghi_chu=line.ghi_chu,
+                ten_tu_do=line.ten_tu_do,
+                don_vi_tu_do=line.don_vi_tu_do,
+                gia_tu_do=line.gia_tu_do,
             )
         )
     db.commit()
@@ -77,6 +80,20 @@ def add_line(
     loai: str | None = None,
     cap_nhat_gia: bool = True,
 ) -> StandardGroupLine:
+    if not part_id and not (ma_linh_kien or "").strip():
+        # Không có mã -> dòng tự do: không tạo linh kiện trong CSDL, tên/đơn vị/giá lưu ngay trên dòng cụm mẫu.
+        line = StandardGroupLine(
+            standard_group_id=standard_group_id,
+            so_luong=so_luong,
+            ghi_chu=ghi_chu,
+            ten_tu_do=ten_linh_kien,
+            don_vi_tu_do=don_vi,
+            gia_tu_do=don_gia or 0,
+        )
+        db.add(line)
+        db.commit()
+        db.refresh(line)
+        return line
     if part_id and supplier_price_id:
         part = db.get(Part, part_id)
         price = db.get(PartSupplierPrice, supplier_price_id)
@@ -105,12 +122,17 @@ def add_line(
     return line
 
 
-def update_line(db: Session, line: StandardGroupLine, *, so_luong: float, ghi_chu: str | None) -> StandardGroupLine:
+def update_line(
+    db: Session, line: StandardGroupLine, *, so_luong: float, ghi_chu: str | None, gia_tu_do: float | None = None
+) -> StandardGroupLine:
     # NCC/giá không sửa ở đây nữa — mỗi linh kiện chỉ có 1 giá/NCC duy nhất, luôn lấy từ
     # PartSupplierPrice hiện tại của part_id (line.supplier_price_id trỏ sẵn đúng dòng đó,
     # không cần chọn lại). Sửa giá/NCC thì vào trang Linh kiện (CSDL) sửa trực tiếp.
+    # Ngoại lệ: dòng tự do (không gắn CSDL) sửa giá ngay trên cụm mẫu.
     line.so_luong = so_luong
     line.ghi_chu = ghi_chu
+    if line.la_tu_do and gia_tu_do is not None:
+        line.gia_tu_do = gia_tu_do
     db.commit()
     db.refresh(line)
     return line
@@ -130,19 +152,20 @@ def apply_group_to_quote(db: Session, quote_id: int, standard_group_id: int) -> 
     for line in standard_group.lines:
         # supplier_price_id của dòng cụm có thể trỏ tới dòng giá đã bị xóa (dữ liệu cũ trước khi đổi sang
         # 1 giá/linh kiện) -> lấy giá hiện tại của linh kiện, giống StandardGroupLine.don_gia.
-        price = line.supplier_price if line.supplier_price and line.supplier_price.is_active else line.part.price
+        # Dòng tự do: part_id None + không mã -> add_part_line() tạo dòng tự do với giá của cụm mẫu.
+        price = line.price
         quotes_crud.add_part_line(
             db,
             quote_id,
             group_id=new_group.id,
             part_id=line.part_id,
             supplier_price_id=price.id if price else None,
-            ten_linh_kien=line.part.ten_linh_kien,
-            ma_linh_kien=line.part.ma_linh_kien,
-            hang=line.part.hang,
-            nha_cung_cap=price.nha_cung_cap if price else None,
-            don_vi=line.part.don_vi,
-            don_gia=price.don_gia if price else 0,
+            ten_linh_kien=line.ten_linh_kien,
+            ma_linh_kien=line.ma_linh_kien,
+            hang=line.hang,
+            nha_cung_cap=line.nha_cung_cap,
+            don_vi=line.don_vi,
+            don_gia=line.don_gia,
             so_luong=line.so_luong,
             ghi_chu=line.ghi_chu,
         )

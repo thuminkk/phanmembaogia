@@ -39,15 +39,20 @@
         <tbody>
             {% for l in group.lines %}
             <tr>
-                <td>{{ l.part.ten_linh_kien }}</td>
-                <td>{{ l.part.ma_linh_kien or "—" }}</td>
-                <td>{{ l.part.hang or "—" }}</td>
+                <td>{{ l.ten_linh_kien }}</td>
+                <td>{{ l.ma_linh_kien or "—" }}</td>
+                <td>{{ l.hang or "—" }}</td>
                 <td>
-                    <span class="text-muted small">{{ (l.part.price.nha_cung_cap if l.part.price else None) or "(chưa rõ NCC)" }}</span>
+                    {% if l.la_tu_do %}<span class="badge text-bg-secondary fw-normal" title="Dòng tự do — không gắn CSDL linh kiện, giá lưu trên cụm mẫu">Tự do</span>
+                    {% else %}<span class="text-muted small">{{ l.nha_cung_cap or "(chưa rõ NCC)" }}</span>{% endif %}
                 </td>
-                <td>{{ l.part.don_vi or "" }}</td>
+                <td>{{ l.don_vi or "" }}</td>
                 <td><input class="form-control form-control-sm" form="line-{{ l.id }}" type="number" step="1" name="so_luong" value="{{ "{:g}".format(l.so_luong) }}" style="width:80px"></td>
+                {% if l.la_tu_do %}
+                <td class="text-end"><input class="form-control form-control-sm text-end ms-auto" form="line-{{ l.id }}" type="number" step="any" name="gia_tu_do" value="{{ '{:g}'.format(l.don_gia) }}" style="width:120px" title="Dòng tự do: giá nhập tự do, lưu trên cụm mẫu"></td>
+                {% else %}
                 <td class="text-end {% if not l.don_gia %}text-warning-emphasis{% endif %}">{{ "{:,.0f}".format(l.don_gia) if l.don_gia else "chưa có giá" }}</td>
+                {% endif %}
                 <td class="text-end">{{ "{:,.0f}".format(l.thanh_tien) }}</td>
                 <td><input class="form-control form-control-sm" form="line-{{ l.id }}" name="ghi_chu" value="{{ l.ghi_chu or '' }}"></td>
                 <td class="d-flex gap-1">
@@ -95,7 +100,7 @@
                 <span class="text-muted" id="price-change-info">— không tích: linh kiện đã có giá trong CSDL sẽ giữ nguyên giá cũ (dòng này dùng giá cũ).</span>
             </div>
         </div>
-        <div class="col-12 text-muted small">Chọn 1 kết quả tìm kiếm ở trên để tự điền (kèm đúng NCC mặc định), hoặc gõ tay — nếu linh kiện/giá chưa có trong CSDL, hệ thống sẽ tự thêm vào.</div>
+        <div class="col-12 text-muted small">Chọn 1 kết quả tìm kiếm ở trên để tự điền (kèm đúng NCC mặc định), hoặc gõ tay — nếu linh kiện/giá chưa có trong CSDL, hệ thống sẽ tự thêm vào. <strong>Để trống Mã</strong> = dòng tự do (VD tủ điện, phụ kiện khác): giá lưu trên cụm mẫu, không lưu vào CSDL.</div>
         <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">Thêm dòng</button></div>
     </form>
 </div>

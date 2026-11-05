@@ -43,7 +43,8 @@ def create_request(db: Session, quote_id: int, form_data: dict, proposal: dict, 
 def apply_request(db: Session, req: BomRequest, groups: list[dict]) -> int:
     """groups: [{"ten_cum", "target_group_id" (None = tạo cụm mới), "dong": [item đề xuất kèm "sl" đã sửa]}].
     Dòng có part_id lấy giá hiện tại trong CSDL; dòng "moi" (chưa có trong CSDL) được tạo linh kiện mới 0đ
-    để người dùng xin giá rồi cập nhật sau. Trả về số dòng đã thêm."""
+    để người dùng xin giá rồi cập nhật sau (không có mã -> dòng tự do, không lưu CSDL); dòng tự do của cụm
+    mẫu giữ giá của cụm mẫu. Trả về số dòng đã thêm."""
     applied = json.loads(req.applied_json or "{}")
     group_ids: list[int] = applied.get("group_ids", [])
     cum_group_ids: list[int | None] = []  # cụm đề xuất thứ i -> id cụm báo giá (để so diff khi rút kinh nghiệm)
@@ -63,7 +64,7 @@ def apply_request(db: Session, req: BomRequest, groups: list[dict]) -> int:
             quotes_crud.add_part_line(
                 db, req.quote_id, part_id=None, supplier_price_id=None,
                 ten_linh_kien=d["ten"], ma_linh_kien=d.get("ma") or None, hang=d.get("hang") or None,
-                nha_cung_cap=None, don_vi=d.get("don_vi") or None, don_gia=0, so_luong=d["sl"],
+                nha_cung_cap=None, don_vi=d.get("don_vi") or None, don_gia=d.get("don_gia") or 0, so_luong=d["sl"],
                 ghi_chu=d.get("ly_do") or None, group_id=target.id, cap_nhat_gia=False,
             )
             added += 1

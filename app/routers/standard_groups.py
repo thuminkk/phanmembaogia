@@ -114,10 +114,13 @@ def edit_line(
     line_id: int,
     so_luong: float = Form(1),
     ghi_chu: str = Form(""),
+    gia_tu_do: str = Form(""),
     db: Session = Depends(get_db),
 ):
     line = db.get(StandardGroupLine, line_id)
-    crud.update_line(db, line, so_luong=so_luong, ghi_chu=ghi_chu or None)
+    crud.update_line(
+        db, line, so_luong=so_luong, ghi_chu=ghi_chu or None, gia_tu_do=float(gia_tu_do) if gia_tu_do.strip() else None
+    )
     return RedirectResponse(f"/cum-tieu-chuan/{group_id}", status_code=303)
 
 

@@ -418,14 +418,14 @@ def edit_part_line(
     don_vi: str = Form(""),
     so_luong: float = Form(1),
     ghi_chu: str = Form(""),
+    don_gia: str = Form(""),
     db: Session = Depends(get_db),
 ):
     # Chỉ sửa thông tin mô tả + số lượng. Cụm đổi qua route /doi-cum riêng. NCC/giá không sửa ở đây
     # nữa — mỗi linh kiện chỉ có 1 NCC/giá duy nhất trong CSDL, sửa trực tiếp ở trang Linh kiện.
+    # Ngoại lệ: dòng tự do (không gắn CSDL) thì sửa giá ngay tại đây.
     line = db.get(QuotePartLine, line_id)
-    crud.update_part_line(
-        db,
-        line,
+    fields = dict(
         ten_linh_kien=ten_linh_kien,
         ma_linh_kien=ma_linh_kien or None,
         hang=hang or None,
@@ -433,6 +433,25 @@ def edit_part_line(
         so_luong=so_luong,
         ghi_chu=ghi_chu or None,
     )
+    if line.la_tu_do and don_gia.strip():
+        fields["don_gia"] = float(don_gia)
+    crud.update_part_line(db, line, **fields)
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
+@router.post("/{quote_id:int}/linh-kien/{line_id:int}/tu-do")
+def make_part_line_free(quote_id: int, line_id: int, db: Session = Depends(get_db)):
+    line = db.get(QuotePartLine, line_id)
+    if line and line.quote_id == quote_id:
+        crud.make_line_free(db, line)
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
+@router.post("/{quote_id:int}/linh-kien/{line_id:int}/gan-csdl")
+def link_part_line(quote_id: int, line_id: int, db: Session = Depends(get_db)):
+    line = db.get(QuotePartLine, line_id)
+    if line and line.quote_id == quote_id:
+        crud.link_line_to_csdl(db, line)
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
 
