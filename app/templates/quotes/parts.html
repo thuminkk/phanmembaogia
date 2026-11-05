@@ -12,7 +12,9 @@
     <div class="d-flex gap-2">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="collapse-all-groups">Thu gọn tất cả</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="expand-all-groups">Mở tất cả</button>
-        <button type="button" class="btn btn-sm btn-outline-primary" id="save-all-lines">Lưu tất cả</button>
+        <span class="small text-muted align-self-center text-nowrap" id="autosave-status" title="Sửa Tên/Mã/Hãng/Đ.vị/SL là tự lưu ngay khi rời ô hoặc nhấn Enter">Tự động lưu</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" id="undo-btn" title="Quay lại thay đổi trước (Ctrl+Z)" disabled>↶ Quay lại</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" id="redo-btn" title="Làm lại thay đổi (Ctrl+Y)" disabled>Tiếp ↷</button>
         <a class="btn btn-sm btn-outline-warning" href="/bao-gia/{{ quote.id }}/linh-kien/dong-bo-gia">Đồng bộ giá theo CSDL</a>
         <a class="btn btn-sm btn-outline-success" href="/bao-gia/{{ quote.id }}/linh-kien/xuat-excel">Xuất Excel</a>
     </div>
@@ -104,7 +106,7 @@
         <div class="small mt-1"><a href="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/cap-nhat-gia" class="badge text-bg-warning text-decoration-none">Lệch giá CSDL — Cập nhật giá</a></div>
         {% endif %}
     </td>
-    <td>{{ "{:,.0f}".format(l.thanh_tien) }}</td>
+    <td class="line-thanh-tien" data-gia="{{ l.don_gia }}">{{ "{:,.0f}".format(l.thanh_tien) }}</td>
     <td>
         <select class="form-select form-select-sm" form="cum-{{ l.id }}" name="group_id" style="width:160px" onchange="this.form.submit()">
             <option value="">-- Chưa phân cụm --</option>
@@ -114,7 +116,6 @@
         </select>
     </td>
     <td class="d-flex gap-1">
-        <button class="btn btn-sm btn-outline-primary" form="pl-{{ l.id }}" type="submit">Lưu</button>
         <button class="btn btn-sm btn-outline-secondary text-nowrap replace-part-btn" type="button" title="Thay bằng linh kiện khác trong CSDL"
             data-action="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/thay-the"
             data-part-id="{{ l.part_id or '' }}"
@@ -149,7 +150,7 @@
             </form>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small">{{ "{:,.0f}".format(g.part_lines | sum(attribute="thanh_tien")) }} đ</span>
+            <span class="text-muted small"><span class="group-total">{{ "{:,.0f}".format(g.part_lines | sum(attribute="thanh_tien")) }}</span> đ</span>
             <div class="d-flex gap-1">
                 <form method="post" action="/bao-gia/{{ quote.id }}/cum/{{ g.id }}/di-chuyen">
                     <input type="hidden" name="huong" value="len">
