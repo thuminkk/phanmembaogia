@@ -7,14 +7,26 @@
 {% include "quotes/_header.html" %}
 {% include "quotes/_subnav.html" %}
 
+{% if history_message %}
+<div class="alert alert-info alert-dismissible fade show py-2 small" role="alert">
+    {{ history_message }}
+    <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Đóng"></button>
+</div>
+{% endif %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="h5 mb-0">Linh kiện tiêu chuẩn</h2>
     <div class="d-flex gap-2">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="collapse-all-groups">Thu gọn tất cả</button>
         <button type="button" class="btn btn-sm btn-outline-secondary" id="expand-all-groups">Mở tất cả</button>
         <span class="small text-muted align-self-center text-nowrap" id="autosave-status" title="Sửa Tên/Mã/Hãng/Đ.vị/SL là tự lưu ngay khi rời ô hoặc nhấn Enter">Tự động lưu</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" id="undo-btn" title="Quay lại thay đổi trước (Ctrl+Z)" disabled>↶ Quay lại</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" id="redo-btn" title="Làm lại thay đổi (Ctrl+Y)" disabled>Tiếp ↷</button>
+        <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/hoan-tac" id="undo-form">
+            <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" id="undo-btn" data-history-url="/bao-gia/{{ quote.id }}/linh-kien/lich-su"
+                title="{{ ('Quay lại: ' ~ history.undo ~ ' (Ctrl+Z)') if history.undo else 'Không còn thao tác để quay lại' }}" {% if not history.undo %}disabled{% endif %}>↶ Quay lại</button>
+        </form>
+        <form method="post" action="/bao-gia/{{ quote.id }}/linh-kien/lam-lai" id="redo-form">
+            <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap" id="redo-btn"
+                title="{{ ('Làm lại: ' ~ history.redo ~ ' (Ctrl+Y)') if history.redo else 'Không còn thao tác để làm lại' }}" {% if not history.redo %}disabled{% endif %}>Tiếp ↷</button>
+        </form>
         <a class="btn btn-sm btn-outline-warning" href="/bao-gia/{{ quote.id }}/linh-kien/dong-bo-gia">Đồng bộ giá theo CSDL</a>
         <a class="btn btn-sm btn-outline-success" href="/bao-gia/{{ quote.id }}/linh-kien/xuat-excel">Xuất Excel</a>
     </div>

@@ -195,40 +195,14 @@ function initSaveAllLines() {
 
 function initAutoSaveLines() {
     // Tab Linh kiện của báo giá: sửa Tên/Mã/Hãng/Đ.vị/SL là tự lưu ngay (khi rời ô / Enter / bấm mũi tên
-    // số), không cần nút Lưu. Mỗi thay đổi ghi vào lịch sử để "↶ Quay lại" / "Tiếp ↷" (Ctrl+Z / Ctrl+Y).
-    // Lịch sử giữ trong sessionStorage theo trang -> vẫn còn sau khi trang tải lại (xóa dòng, đổi cụm...).
+    // số), không cần nút Lưu. Quay lại / Tiếp (Ctrl+Z / Ctrl+Y) chạy phía server cho MỌI thao tác
+    // (app/crud/quote_history.py) — ở đây chỉ cập nhật nhãn 2 nút sau mỗi lần tự lưu.
     const undoBtn = document.getElementById("undo-btn");
     const redoBtn = document.getElementById("redo-btn");
     const status = document.getElementById("autosave-status");
     if (!undoBtn || !redoBtn) return;
 
-    const FIELD_LABELS = { ten_linh_kien: "Tên", ma_linh_kien: "Mã", hang: "Hãng", don_vi: "Đ.vị", so_luong: "SL" };
-    const storageKey = "partsHistory:" + location.pathname;
-    let history = { items: [], pos: 0 }; // items[0..pos) đã áp dụng, items[pos..] có thể "Tiếp"
-    try {
-        history = JSON.parse(sessionStorage.getItem(storageKey)) || history;
-    } catch (e) { /* bỏ qua */ }
-
-    function persist() {
-        try {
-            sessionStorage.setItem(storageKey, JSON.stringify(history));
-        } catch (e) { /* bỏ qua */ }
-    }
-
-    function fieldInput(lineId, field) {
-        return document.querySelector('[form="pl-' + lineId + '"][name="' + field + '"]');
-    }
-
-    function describe(h) {
-        return (FIELD_LABELS[h.field] || h.field) + ' "' + h.oldVal + '" → "' + h.newVal + '"';
-    }
-
-    function refreshButtons() {
-        undoBtn.disabled = history.pos === 0;
-        redoBtn.disabled = history.pos >= history.items.length;
-        undoBtn.title = history.pos ? "Quay lại: " + describe(history.items[history.pos - 1]) + " (Ctrl+Z)" : "Không còn thay đổi để quay lại";
-        redoBtn.title = history.pos < history.items.length ? "Làm lại: " + describe(history.items[history.pos]) + " (Ctrl+Y)" : "Không còn thay đổi để làm lại";
-    }
+    const FIELDS = ["ten_linh_kien", "ma_linh_kien", "hang", "don_vi", "so_luong"];
 
     function setStatus(text, cls) {
         if (!status) return;
@@ -258,19 +232,32 @@ function initAutoSaveLines() {
         total.textContent = fmt(sum);
     }
 
-    // Lưu tuần tự (1 hàng đợi) để 2 lần lưu cùng 1 dòng không chạy chéo nhau.
+    function refreshHistoryButtons() {
+        return fetch(undoBtn.dataset.historyUrl)
+            .then((r) => r.json())
+            .then((h) => {
+                undoBtn.disabled = !h.undo;
+                redoBtn.disabled = !h.redo;
+                undoBtn.title = h.undo ? "Quay lại: " + h.undo + " (Ctrl+Z)" : "Không còn thao tác để quay lại";
+                redoBtn.title = h.redo ? "Làm lại: " + h.redo + " (Ctrl+Y)" : "Không còn thao tác để làm lại";
+            })
+            .catch(() => {});
+    }
+
+    // Lưu tuần tự (1 hàng đợi) để các lần lưu không chạy chéo nhau và Quay lại luôn đợi lưu xong.
     let queue = Promise.resolve();
     let pending = 0;
-    function saveLine(lineId) {
-        const form = document.getElementById("pl-" + lineId);
-        if (!form) return;
+    function saveLine(form) {
         pending++;
         setStatus("Đang lưu...", "text-muted");
         queue = queue
             .then(() => fetch(form.action, { method: "POST", body: new FormData(form), redirect: "manual" }))
             .then((r) => {
                 if (!(r.ok || r.type === "opaqueredirect")) throw new Error(r.status);
-                if (--pending === 0) setStatus("Đã lưu ✓", "text-success");
+                if (--pending === 0) {
+                    setStatus("Đã lưu ✓", "text-success");
+                    return refreshHistoryButtons();
+                }
             })
             .catch(() => {
                 pending--;
@@ -278,43 +265,11 @@ function initAutoSaveLines() {
             });
     }
 
-    function applyValue(h, value) {
-        const input = fieldInput(h.lineId, h.field);
-        if (!input) {
-            alert("Dòng này không còn trên trang (đã xóa?) — bỏ qua thay đổi: " + describe(h));
-            return;
-        }
-        input.value = value;
-        input.dataset.prev = value;
-        refreshTotals(input.closest("tr"));
-        input.classList.add("bg-warning-subtle");
-        setTimeout(() => input.classList.remove("bg-warning-subtle"), 1500);
-        input.scrollIntoView({ block: "center", behavior: "smooth" });
-        saveLine(h.lineId);
-    }
-
-    function undo() {
-        if (history.pos === 0) return;
-        history.pos--;
-        applyValue(history.items[history.pos], history.items[history.pos].oldVal);
-        persist();
-        refreshButtons();
-    }
-
-    function redo() {
-        if (history.pos >= history.items.length) return;
-        applyValue(history.items[history.pos], history.items[history.pos].newVal);
-        history.pos++;
-        persist();
-        refreshButtons();
-    }
-
     document.querySelectorAll('form[id^="pl-"]').forEach((form) => {
-        const lineId = form.id.slice(3);
         // Enter trong ô không nộp form kiểu cũ (tải lại trang) mà chỉ rời ô -> kích hoạt tự lưu.
         form.addEventListener("submit", (e) => e.preventDefault());
-        document.querySelectorAll('[form="pl-' + lineId + '"]').forEach((input) => {
-            if (!FIELD_LABELS[input.name]) return;
+        document.querySelectorAll('[form="' + form.id + '"]').forEach((input) => {
+            if (!FIELDS.includes(input.name)) return;
             input.dataset.prev = input.value;
             input.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
@@ -326,45 +281,47 @@ function initAutoSaveLines() {
                 if (input.name === "so_luong") refreshTotals(input.closest("tr"));
             });
             input.addEventListener("change", () => {
-                const oldVal = input.dataset.prev;
-                const newVal = input.value;
-                if (oldVal === newVal) return;
-                if (input.required && !newVal.trim()) {
+                if (input.value === input.dataset.prev) return;
+                if (input.required && !input.value.trim()) {
                     alert("Tên linh kiện không được để trống.");
-                    input.value = oldVal;
+                    input.value = input.dataset.prev;
                     return;
                 }
-                input.dataset.prev = newVal;
-                history.items = history.items.slice(0, history.pos);
-                history.items.push({ lineId: lineId, field: input.name, oldVal: oldVal, newVal: newVal });
-                if (history.items.length > 200) history.items.shift();
-                history.pos = history.items.length;
-                persist();
-                refreshButtons();
-                saveLine(lineId);
+                input.dataset.prev = input.value;
+                saveLine(form);
             });
         });
     });
 
-    undoBtn.addEventListener("click", undo);
-    redoBtn.addEventListener("click", redo);
+    // Bấm Quay lại / Tiếp khi đang có ô chưa lưu xong -> đợi lưu xong rồi mới gửi.
+    [undoBtn.form, redoBtn.form].forEach((f) => {
+        f.addEventListener("submit", (e) => {
+            if (f.dataset.ready) return;
+            e.preventDefault();
+            if (document.activeElement) document.activeElement.blur(); // ô đang gõ dở -> "change" -> lưu
+            f.querySelector("button").disabled = true;
+            queue.then(() => {
+                f.dataset.ready = "1";
+                f.submit();
+            });
+        });
+    });
+
     document.addEventListener("keydown", (e) => {
         // Đang gõ trong ô nhập -> để trình duyệt tự xử lý Ctrl+Z của riêng ô đó.
         if (e.target.closest("input, textarea, select, [contenteditable]")) return;
         if (!(e.ctrlKey || e.metaKey)) return;
         const k = e.key.toLowerCase();
-        if (k === "z" && !e.shiftKey) {
-            e.preventDefault();
-            undo();
-        } else if (k === "y" || (k === "z" && e.shiftKey)) {
-            e.preventDefault();
-            redo();
-        }
+        let btn = null;
+        if (k === "z" && !e.shiftKey) btn = undoBtn;
+        else if (k === "y" || (k === "z" && e.shiftKey)) btn = redoBtn;
+        if (!btn) return;
+        e.preventDefault();
+        if (!btn.disabled) btn.form.requestSubmit(btn);
     });
     window.addEventListener("beforeunload", (e) => {
         if (pending > 0) e.preventDefault();
     });
-    refreshButtons();
 }
 
 function initGroupSelectAll() {

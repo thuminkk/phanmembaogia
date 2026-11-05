@@ -393,3 +393,18 @@ class AiExperience(Base):
     bom_request_id: Mapped[int | None] = mapped_column(ForeignKey("bom_requests.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)
+
+
+class QuoteHistory(Base):
+    """Lịch sử Quay lại / Tiếp của tab Linh kiện: mỗi dòng là 1 bản chụp TOÀN BỘ cụm + dòng linh kiện
+    của báo giá (JSON). kind="undo": trạng thái TRƯỚC 1 thao tác (Quay lại = khôi phục bản này);
+    kind="redo": trạng thái trước khi bấm Quay lại (Tiếp = khôi phục bản này)."""
+
+    __tablename__ = "quote_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    quote_id: Mapped[int] = mapped_column(ForeignKey("quotes.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    label: Mapped[str] = mapped_column(String(255))
+    data: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=datetime.datetime.utcnow)

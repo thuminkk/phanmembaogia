@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.templates import templates
 from app.crud import parts as parts_crud
+from app.crud import quote_history
 from app.crud import quotes as crud
 from app.crud import standard_groups as standard_groups_crud
 from app.db.database import get_db
@@ -43,13 +44,35 @@ def quote_nvl_page(request: Request, quote_id: int, db: Session = Depends(get_db
 
 
 @router.get("/{quote_id:int}/linh-kien")
-def quote_parts_page(request: Request, quote_id: int, db: Session = Depends(get_db)):
+def quote_parts_page(request: Request, quote_id: int, lich_su: str = "", db: Session = Depends(get_db)):
     context = _quote_context(db, quote_id, "linh_kien")
+    context["history_message"] = lich_su
     context["standard_groups"] = standard_groups_crud.list_groups(db)
     context["same_name_suggestions"] = crud.suggest_same_name_parts(db, context["quote"]) if context["quote"] else {}
     context["picker_hang_options"] = parts_crud.distinct_values(db, "hang")
     context["picker_loai_options"] = parts_crud.LOAI_OPTIONS
+    context["history"] = quote_history.status(db, quote_id)
     return templates.TemplateResponse(request, "quotes/parts.html", context)
+
+
+@router.get("/{quote_id:int}/linh-kien/lich-su")
+def quote_parts_history(quote_id: int, db: Session = Depends(get_db)):
+    """Nhãn bước Quay lại / Tiếp hiện tại — JS gọi lại sau mỗi lần tự lưu (không tải lại trang)."""
+    return quote_history.status(db, quote_id)
+
+
+@router.post("/{quote_id:int}/linh-kien/hoan-tac")
+def quote_parts_undo(quote_id: int, db: Session = Depends(get_db)):
+    label = quote_history.undo(db, quote_id)
+    msg = urllib.parse.quote(f"Đã quay lại: {label}") if label else ""
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien" + (f"?lich_su={msg}" if msg else ""), status_code=303)
+
+
+@router.post("/{quote_id:int}/linh-kien/lam-lai")
+def quote_parts_redo(quote_id: int, db: Session = Depends(get_db)):
+    label = quote_history.redo(db, quote_id)
+    msg = urllib.parse.quote(f"Đã làm lại: {label}") if label else ""
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien" + (f"?lich_su={msg}" if msg else ""), status_code=303)
 
 
 @router.get("/{quote_id:int}/linh-kien/xuat-excel")

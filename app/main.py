@@ -1,3 +1,4 @@
+import re
 from urllib.parse import quote
 
 from fastapi import FastAPI, Request
@@ -7,6 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.core.config import APP_NAME, BASE_DIR, SECRET_KEY, SESSION_HTTPS_ONLY
+from app.crud import quote_history
 from app.crud import users as users_crud
 from app.db import models  # noqa: F401 - đăng ký model với Base trước khi create_all
 from app.db.database import Base, SessionLocal, engine
@@ -48,6 +50,35 @@ def _load_active_user(user_id: int):
     with SessionLocal() as db:
         user = users_crud.get_user(db, user_id)
         return user if user and user.is_active else None
+
+
+# POST làm thay đổi cụm/dòng linh kiện của 1 báo giá -> ghi lịch sử Quay lại / Tiếp (app/crud/quote_history.py).
+# Khai báo TRƯỚC require_login để chạy bên trong nó (chỉ khi đã đăng nhập).
+HISTORY_PATH = re.compile(r"^/bao-gia/(\d+)/(?:linh-kien|cum)(?:/|$)|^/bao-gia/(\d+)/tu-dong-bom/\d+/ap-dung$")
+HISTORY_SKIP = ("/linh-kien/hoan-tac", "/linh-kien/lam-lai")
+
+
+def _history_snapshot(quote_id: int) -> str:
+    with SessionLocal() as db:
+        return quote_history.snapshot(db, quote_id)
+
+
+def _history_record(quote_id: int, before: str) -> None:
+    with SessionLocal() as db:
+        quote_history.record(db, quote_id, before)
+
+
+@app.middleware("http")
+async def record_quote_history(request: Request, call_next):
+    m = HISTORY_PATH.match(request.url.path) if request.method == "POST" else None
+    if m is None or request.url.path.endswith(HISTORY_SKIP):
+        return await call_next(request)
+    quote_id = int(m.group(1) or m.group(2))
+    before = await run_in_threadpool(_history_snapshot, quote_id)
+    response = await call_next(request)
+    if response.status_code < 400:
+        await run_in_threadpool(_history_record, quote_id, before)
+    return response
 
 
 @app.middleware("http")
