@@ -434,7 +434,7 @@ def edit_part_line(
         ghi_chu=ghi_chu or None,
     )
     if line.la_tu_do and don_gia.strip():
-        fields["don_gia"] = float(don_gia)
+        fields["don_gia"] = float(don_gia.replace(",", ""))  # ô giá hiển thị kiểu 2,500,000
     crud.update_part_line(db, line, **fields)
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 

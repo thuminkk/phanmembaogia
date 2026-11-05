@@ -49,7 +49,7 @@
                 <td>{{ l.don_vi or "" }}</td>
                 <td><input class="form-control form-control-sm" form="line-{{ l.id }}" type="number" step="1" name="so_luong" value="{{ "{:g}".format(l.so_luong) }}" style="width:80px"></td>
                 {% if l.la_tu_do %}
-                <td class="text-end"><input class="form-control form-control-sm text-end ms-auto" form="line-{{ l.id }}" type="number" step="any" name="gia_tu_do" value="{{ '{:g}'.format(l.don_gia) }}" style="width:120px" title="Dòng tự do: giá nhập tự do, lưu trên cụm mẫu"></td>
+                <td class="text-end"><input class="form-control form-control-sm text-end ms-auto money-input" form="line-{{ l.id }}" type="text" inputmode="decimal" name="gia_tu_do" value="{{ '{:,.0f}'.format(l.don_gia) }}" style="width:120px" title="Dòng tự do: giá nhập tự do, lưu trên cụm mẫu"></td>
                 {% else %}
                 <td class="text-end {% if not l.don_gia %}text-warning-emphasis{% endif %}">{{ "{:,.0f}".format(l.don_gia) if l.don_gia else "chưa có giá" }}</td>
                 {% endif %}

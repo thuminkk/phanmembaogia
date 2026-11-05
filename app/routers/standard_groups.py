@@ -119,7 +119,7 @@ def edit_line(
 ):
     line = db.get(StandardGroupLine, line_id)
     crud.update_line(
-        db, line, so_luong=so_luong, ghi_chu=ghi_chu or None, gia_tu_do=float(gia_tu_do) if gia_tu_do.strip() else None
+        db, line, so_luong=so_luong, ghi_chu=ghi_chu or None, gia_tu_do=float(gia_tu_do.replace(",", "")) if gia_tu_do.strip() else None
     )
     return RedirectResponse(f"/cum-tieu-chuan/{group_id}", status_code=303)
 

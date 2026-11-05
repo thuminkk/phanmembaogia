@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initCollapseAllGroups();
     initSaveAllLines();
     initAutoSaveLines();
+    initMoneyInputs();
     initGroupSelectAll();
     initReplacePart();
     initPartPicker();
@@ -219,7 +220,7 @@ function initAutoSaveLines() {
         const sl = row.querySelector('[name="so_luong"]');
         const gia = row.querySelector('[name="don_gia"]'); // dòng tự do: giá là ô nhập
         if (!cell || !sl) return 0;
-        return Number(gia ? gia.value : cell.dataset.gia || 0) * Number(sl.value || 0);
+        return Number(gia ? gia.value.replace(/,/g, "") : cell.dataset.gia || 0) * Number(sl.value || 0);
     }
 
     function refreshTotals(row) {
@@ -324,6 +325,18 @@ function initAutoSaveLines() {
     window.addEventListener("beforeunload", (e) => {
         if (pending > 0) e.preventDefault();
     });
+}
+
+function initMoneyInputs() {
+    // Ô giá của dòng tự do (.money-input): hiện kiểu 2,500,000 như các cột giá khác. Định dạng lại khi rời ô
+    // — lắng nghe ở pha capture để chạy TRƯỚC listener tự lưu (so giá trị đã định dạng với giá trị cũ).
+    // Server tự bỏ dấu phẩy khi lưu.
+    document.addEventListener("change", (e) => {
+        const input = e.target;
+        if (!input.classList || !input.classList.contains("money-input")) return;
+        const n = Number(input.value.replace(/[,\s]/g, ""));
+        if (input.value.trim() && !Number.isNaN(n)) input.value = Math.round(n).toLocaleString("en-US");
+    }, true);
 }
 
 function initGroupSelectAll() {

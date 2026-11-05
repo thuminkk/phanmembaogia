@@ -92,7 +92,7 @@
     <td>
         {% if l.la_tu_do %}
         <div class="d-flex align-items-center gap-1">
-            <input class="form-control form-control-sm text-end fw-semibold" form="pl-{{ l.id }}" type="number" step="any" name="don_gia" value="{{ '{:g}'.format(l.don_gia) }}" style="width:120px" title="Dòng tự do: giá nhập tự do, chỉ lưu trên báo giá này (không lưu CSDL linh kiện)">
+            <input class="form-control form-control-sm text-end fw-semibold money-input" form="pl-{{ l.id }}" type="text" inputmode="decimal" name="don_gia" value="{{ '{:,.0f}'.format(l.don_gia) }}" style="width:120px" title="Dòng tự do: giá nhập tự do, chỉ lưu trên báo giá này (không lưu CSDL linh kiện)">
             <span class="badge text-bg-secondary fw-normal" title="Dòng tự do — không gắn CSDL linh kiện">Tự do</span>
         </div>
         {% else %}
