@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -504,6 +506,29 @@ def update_part_line(db: Session, line: QuotePartLine, **fields) -> QuotePartLin
     db.commit()
     db.refresh(line)
     return line
+
+
+def set_line_price(db: Session, line: QuotePartLine, don_gia: float, cap_nhat_csdl: bool) -> None:
+    """Điền giá mới cho 1 dòng gắn CSDL. cap_nhat_csdl=True: ghi luôn giá mới vào CSDL linh kiện (giữ NCC)
+    và mọi dòng cùng giá CSDL đó trong báo giá này lấy giá mới; False: chỉ đổi dòng này (hiện "Lệch giá CSDL")."""
+    line.don_gia = don_gia
+    if cap_nhat_csdl and line.part is not None:
+        price = line.supplier_price or parts_crud._get_supplier_price(db, line.part_id)
+        if price is None:
+            price = PartSupplierPrice(part_id=line.part_id, nha_cung_cap=line.nha_cung_cap or "", don_gia=don_gia)
+            db.add(price)
+            db.flush()
+        else:
+            price.don_gia = don_gia
+            price.is_active = True
+            price.ngay_cap_nhat = datetime.datetime.utcnow()
+        line.supplier_price_id = price.id
+        others = db.scalars(
+            select(QuotePartLine).where(QuotePartLine.quote_id == line.quote_id, QuotePartLine.supplier_price_id == price.id)
+        )
+        for other in others:
+            other.don_gia = don_gia
+    db.commit()
 
 
 def make_line_free(db: Session, line: QuotePartLine) -> None:

@@ -439,6 +439,20 @@ def edit_part_line(
     return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
 
 
+@router.post("/{quote_id:int}/linh-kien/{line_id:int}/doi-gia")
+def change_part_line_price(
+    quote_id: int,
+    line_id: int,
+    don_gia: str = Form(...),
+    cap_nhat_csdl: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    line = db.get(QuotePartLine, line_id)
+    if line and line.quote_id == quote_id:
+        crud.set_line_price(db, line, float(don_gia.replace(",", "")), bool(cap_nhat_csdl))
+    return RedirectResponse(f"/bao-gia/{quote_id}/linh-kien", status_code=303)
+
+
 @router.post("/{quote_id:int}/linh-kien/{line_id:int}/tu-do")
 def make_part_line_free(quote_id: int, line_id: int, db: Session = Depends(get_db)):
     line = db.get(QuotePartLine, line_id)

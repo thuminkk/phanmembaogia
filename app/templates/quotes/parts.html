@@ -96,7 +96,10 @@
             <span class="badge text-bg-secondary fw-normal" title="Dòng tự do — không gắn CSDL linh kiện">Tự do</span>
         </div>
         {% else %}
-        <span class="fw-semibold">{{ "{:,.0f}".format(l.don_gia) }}</span>
+        <input class="form-control form-control-sm text-end fw-semibold money-input csdl-price-input" type="text" inputmode="decimal" name="don_gia" value="{{ '{:,.0f}'.format(l.don_gia) }}" style="width:120px"
+            data-action="/bao-gia/{{ quote_id }}/linh-kien/{{ l.id }}/doi-gia" data-ten="{{ l.ten_linh_kien }}"
+            data-gia-csdl="{{ l.supplier_price.don_gia if l.supplier_price else '' }}"
+            title="Điền giá mới -> hỏi có cập nhật vào CSDL linh kiện không">
         {% endif %}
         {% set goi_y = same_name_suggestions.get(l.id) %}
         {% if goi_y %}
@@ -264,7 +267,32 @@
     </form>
 </div>
 
-<div class="modal fade" id="replace-part-modal" tabindex="-1" aria-labelledby="replace-part-title" aria-hidden="true">
+<div class="modal fade" id="price-modal" tabindex="-1" aria-labelledby="price-modal-title" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="price-modal-title">Đổi giá linh kiện</h2>
+            </div>
+            <div class="modal-body">
+                <div class="fw-semibold mb-2" id="pm-ten"></div>
+                <div>Giá CSDL hiện tại: <span class="fw-bold" id="pm-cu"></span> đ</div>
+                <div>Giá mới: <span class="fw-bold text-primary" id="pm-moi"></span> đ</div>
+                <div class="text-muted small mt-2">Cập nhật CSDL: giá mới thành giá chuẩn của linh kiện (giữ NCC), dùng cho các lần báo giá sau; các dòng cùng linh kiện trong báo giá này cũng lấy giá mới.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="pm-cancel">Hủy</button>
+                <button type="button" class="btn btn-outline-primary" id="pm-only">Chỉ báo giá này</button>
+                <button type="button" class="btn btn-primary" id="pm-csdl">Cập nhật vào CSDL</button>
+            </div>
+        </div>
+    </div>
+</div>
+<form id="pm-form" method="post" class="d-none">
+    <input type="hidden" name="don_gia">
+    <input type="hidden" name="cap_nhat_csdl">
+</form>
+
+<div class="modal fade" id="replace-part-modal"tabindex="-1" aria-labelledby="replace-part-title" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">

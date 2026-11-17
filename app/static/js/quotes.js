@@ -296,6 +296,51 @@ function initAutoSaveLines() {
         });
     });
 
+    // Dòng gắn CSDL: điền giá mới -> hỏi "Cập nhật vào CSDL" hay "Chỉ báo giá này" (Hủy = trả giá cũ).
+    const priceModalEl = document.getElementById("price-modal");
+    const priceForm = document.getElementById("pm-form");
+    if (priceModalEl && priceForm) {
+        const priceModal = bootstrap.Modal.getOrCreateInstance(priceModalEl);
+        let current = null;
+        const num = (v) => Number(String(v).replace(/,/g, ""));
+        function submitPrice(capNhat) {
+            priceForm.action = current.dataset.action;
+            priceForm.don_gia.value = num(current.value);
+            priceForm.cap_nhat_csdl.value = capNhat ? "1" : "";
+            current.dataset.prev = current.value; // không trả giá cũ khi modal đóng
+            document.getElementById("pm-only").disabled = document.getElementById("pm-csdl").disabled = true;
+            queue.then(() => priceForm.submit());
+        }
+        document.querySelectorAll(".csdl-price-input").forEach((input) => {
+            input.dataset.prev = input.value;
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    input.blur();
+                }
+            });
+            input.addEventListener("input", () => refreshTotals(input.closest("tr")));
+            input.addEventListener("change", () => {
+                if (Number.isNaN(num(input.value)) || !input.value.trim()) input.value = input.dataset.prev;
+                if (num(input.value) === num(input.dataset.prev)) return refreshTotals(input.closest("tr"));
+                current = input;
+                document.getElementById("pm-ten").textContent = input.dataset.ten;
+                const cu = input.dataset.giaCsdl;
+                document.getElementById("pm-cu").textContent = cu === "" ? "(chưa có)" : fmt(Number(cu));
+                document.getElementById("pm-moi").textContent = fmt(num(input.value));
+                priceModal.show();
+            });
+        });
+        document.getElementById("pm-only").addEventListener("click", () => submitPrice(false));
+        document.getElementById("pm-csdl").addEventListener("click", () => submitPrice(true));
+        priceModalEl.addEventListener("hidden.bs.modal", () => {
+            if (current && current.value !== current.dataset.prev) {
+                current.value = current.dataset.prev; // Hủy
+                refreshTotals(current.closest("tr"));
+            }
+        });
+    }
+
     // Bấm Quay lại / Tiếp khi đang có ô chưa lưu xong -> đợi lưu xong rồi mới gửi.
     [undoBtn.form, redoBtn.form].forEach((f) => {
         f.addEventListener("submit", (e) => {
